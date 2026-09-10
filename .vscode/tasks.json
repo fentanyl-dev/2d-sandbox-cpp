@@ -12,6 +12,7 @@
             "-g",
             "${workspaceFolder}/main.cpp",
             "${workspaceFolder}/map.cpp",
+            "${workspaceFolder}/player.cpp",
             "-o",
             "${workspaceFolder}/main",
             "-L/usr/local/lib",

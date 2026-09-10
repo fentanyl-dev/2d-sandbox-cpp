@@ -1,5 +1,6 @@
 #include <SFML/Graphics.hpp>
 #include "map.h"
+#include "player.h"
 
 using namespace std;
 
@@ -11,7 +12,8 @@ int main()
 
     map myMap;
     myMap.loadMap();
-        
+
+    player Player;
 
     while (window.isOpen())
     {
@@ -24,6 +26,8 @@ int main()
             
         }
         myMap.draw(window);
+        Player.move();
+        Player.draw(window);
         window.display();
     }
     
