@@ -19,6 +19,17 @@ void map::loadMap()
     {
         cout << "Nie udalo sie wczytac pliku grass";
     }
+
+    if (!dirt.loadFromFile("dirt.png"))
+    {
+        cout << "Nie udalo sie wczytac pliku dirt";
+    }
+    
+    if (!stone.loadFromFile("stone1.png"))
+    {
+        cout << "Nie udalo sie wczytac pliku stone";
+    }
+    
     
     if (!mapFile)
     {
@@ -49,13 +60,21 @@ void map::draw(sf::RenderWindow& window)
 
     grassSprite.setScale({3.125f, 3.125f});
 
+    sf::Sprite dirtSprite(dirt);
+
+    dirtSprite.setScale({3.125f, 3.125f});
+
+    sf::Sprite stoneSprite(stone);
+
+    stoneSprite.setScale({3.125f, 3.125f});
+
     for (int y = 0; y < mapData.size(); y++)
     {
         for (int x = 0; x < mapData[y].size(); x++)
         {
             sf::RectangleShape tile;
             tile.setSize({tileSize, tileSize});
-            tile.setPosition({x * tileSize, y * tileSize});
+            tile.setPosition({x * tileSize, y * tileSize + mapOffsetY});
 
             // Powietrze
 
@@ -68,7 +87,7 @@ void map::draw(sf::RenderWindow& window)
 
             else if (mapData[y][x] == '1')
             {
-                grassSprite.setPosition({x * tileSize, y * tileSize});
+                grassSprite.setPosition({x * tileSize, y * tileSize + mapOffsetY});
                 window.draw(grassSprite);
                 continue;
             }
@@ -77,14 +96,18 @@ void map::draw(sf::RenderWindow& window)
 
             else if (mapData[y][x] == '2')
             {
-                tile.setFillColor(sf::Color(150, 75, 0));
+                dirtSprite.setPosition({x * tileSize, y * tileSize + mapOffsetY});
+                window.draw(dirtSprite);
+                continue;
             }
 
             //Kamienie
 
             else if (mapData[y][x] == '3')
             {
-                tile.setFillColor(sf::Color(77, 56, 51));
+                stoneSprite.setPosition({x * tileSize, y * tileSize + mapOffsetY});
+                window.draw(stoneSprite);
+                continue;
             }
 
             window.draw(tile);
