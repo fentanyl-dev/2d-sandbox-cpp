@@ -3,12 +3,15 @@
 
 using namespace std;
 
-player::player()
+player::player(map* worldMap)
 {
+    this->worldMap = worldMap;
+
     body.setSize({50.f, 50.f});
     body.setPosition({500.f, 350.f});
 
-    floor = sf::FloatRect({0.f, 460.f}, {1920.f, 100.f});
+     onGround = true;
+     velocityY = 0.f;
 }
 
 void player::draw(sf::RenderWindow& window)
@@ -18,34 +21,55 @@ void player::draw(sf::RenderWindow& window)
 
 void player::move()
 {
-    sf::Vector2f oldPosition = body.getPosition();
-
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::W) || sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Up))
-    {
-        body.move({0.f, -50.f});
-    }
-    else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::S) || sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Down))
-    {
-        body.move({0.f, 50.f});
-    }
-    else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::D) || sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Right))
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::D) || sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Right))
     {
         body.move({50.f, 0.f});
     }
+
     else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::A) || sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Left))
     {
         body.move({-50.f, 0.f});
     }
     
-    auto intersection = body.getGlobalBounds().findIntersection(floor);
+}
 
-    if (intersection)
+void player::jump()
+{
+
+    if (onGround)
     {
-        if (body.getPosition().y > oldPosition.y)
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Space))
         {
-            body.setPosition({body.getPosition().x, oldPosition.y});
+            velocityY = -10.f;
+            onGround = false;
         }
-        
-    } 
+    }
     
+}
+
+void player::gravity()
+{
+    velocityY += 0.5f;
+
+    body.move({0.f, velocityY});
+
+    float playerBottom = body.getPosition().y + body.getSize().y;
+
+    float playerCenterX =
+        body.getPosition().x + body.getSize().x / 2.f;
+
+    if (velocityY > 0 &&
+        worldMap->isSolid(playerCenterX, playerBottom))
+    {
+        float groundY =
+            worldMap->getGroundY(playerCenterX, playerBottom);
+
+        body.setPosition({
+            body.getPosition().x,
+            groundY - body.getSize().y
+        });
+
+        velocityY = 0.f;
+        onGround = true;
+    }
 }

@@ -17,4 +17,6 @@ private:
 public:
     void loadMap();
     void draw(sf::RenderWindow& window);
+    bool isSolid(float x, float y);
+    float getGroundY(float x, float y);
 };

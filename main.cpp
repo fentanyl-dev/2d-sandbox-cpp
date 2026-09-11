@@ -13,7 +13,7 @@ int main()
     map myMap;
     myMap.loadMap();
 
-    player Player;
+    player Player(&myMap);
 
     while (window.isOpen())
     {
@@ -25,9 +25,13 @@ int main()
             }
             
         }
-        myMap.draw(window);
         Player.move();
+        Player.jump();
+        Player.gravity();
+
+        myMap.draw(window);
         Player.draw(window);
+
         window.display();
     }
     

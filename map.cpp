@@ -116,3 +116,32 @@ void map::draw(sf::RenderWindow& window)
     }
     
 }
+
+bool map::isSolid(float x, float y)
+{
+    int tileX = x / tileSize; 
+    int tileY = (y - mapOffsetY) / tileSize;
+
+    if (tileY < 0 || tileY >= mapData.size())
+    {
+        return false;
+    }
+
+    if (tileX < 0 || tileX >= mapData[tileY].size())
+    {
+        return false;
+    }
+    
+    if (mapData[tileY][tileX] == '0')
+    {
+        return false;
+    }
+    return true;
+}
+
+float map::getGroundY(float x, float y)
+{
+    int tileY = (y - mapOffsetY) / tileSize;
+
+    return tileY * tileSize + mapOffsetY;
+}
