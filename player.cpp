@@ -21,14 +21,26 @@ void player::draw(sf::RenderWindow& window)
 
 void player::move()
 {
+    float playerCenterY = body.getPosition().y + body.getSize().y / 2.f;
+
+    float playerRight = body.getPosition().x + body.getSize().x;
+
+    float playerLeft = body.getPosition().x - 1.f;
+
     if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::D) || sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Right))
     {
-        body.move({50.f, 0.f});
+        if (!worldMap->isSolid(playerRight,playerCenterY))
+        {
+            body.move({50.f, 0.f});
+        }
     }
 
     else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::A) || sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Left))
     {
-        body.move({-50.f, 0.f});
+        if (!worldMap->isSolid(playerLeft, playerCenterY))
+        {
+            body.move({-50.f, 0.f});
+        }
     }
     
 }
@@ -53,10 +65,9 @@ void player::gravity()
 
     body.move({0.f, velocityY});
 
-    float playerBottom = body.getPosition().y + body.getSize().y;
+    float playerCenterX = body.getPosition().x + body.getSize().x / 2.f;
 
-    float playerCenterX =
-        body.getPosition().x + body.getSize().x / 2.f;
+    float playerBottom = body.getPosition().y + body.getSize().y;
 
     if (velocityY > 0 &&
         worldMap->isSolid(playerCenterX, playerBottom))
@@ -72,4 +83,6 @@ void player::gravity()
         velocityY = 0.f;
         onGround = true;
     }
+
+    
 }
