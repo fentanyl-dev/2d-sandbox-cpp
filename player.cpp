@@ -3,35 +3,63 @@
 
 using namespace std;
 
-player::player(map* worldMap)
+player::player(map* worldMap):playerSprite(playerTexture)
 {
     this->worldMap = worldMap;
 
-    body.setSize({50.f, 50.f});
-    body.setPosition({500.f, 350.f});
+    if (!playerTexture.loadFromFile("assets/player/idle/Soldier_Idle.png"))
+    {
+        cout << "Nie udalo sie wczytac tekstury postaci!";
+    }
+
+    if (!walkTexture.loadFromFile("assets/player/walking/Soldier_Walk.png"))
+    {
+        cout << "Nie udalo sie wczytac tekstury chodzenia postaci!";
+    }
+    
+
+    hitbox.setSize({50.f, 50.f});
+    hitbox.setPosition({500.f, 350.f});
+
+    playerSprite.setTexture(walkTexture);
+    playerSprite.setTextureRect(sf::IntRect({0, 0}, {100,100}));
+
+    playerSprite.setPosition({475.f, 300.f});
+
+    playerSprite.setOrigin({50.f, 57.f}); 
+
+    playerSprite.setScale({3.125f, 3.125f});
 
      onGround = true;
      velocityY = 0.f;
+
+     updateSpritePosition();
+
 }
 
 void player::draw(sf::RenderWindow& window)
 {
-    window.draw(body);
+    window.draw(playerSprite);
+
 }
 
 void player::move()
 {
-    float playerCenterY = body.getPosition().y + body.getSize().y / 2.f;
+    isWalking = false;
 
-    float playerRight = body.getPosition().x + body.getSize().x;
+    float playerCenterY = hitbox.getPosition().y + hitbox.getSize().y / 2.f;
 
-    float playerLeft = body.getPosition().x - 1.f;
+    float playerRight = hitbox.getPosition().x + hitbox.getSize().x;
+
+    float playerLeft = hitbox.getPosition().x - 1.f;
 
     if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::D) || sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Right))
     {
         if (!worldMap->isSolid(playerRight,playerCenterY))
         {
-            body.move({50.f, 0.f});
+            hitbox.move({5.f, 0.f});
+            isWalking = true;
+            facingRight = true;
         }
     }
 
@@ -39,9 +67,13 @@ void player::move()
     {
         if (!worldMap->isSolid(playerLeft, playerCenterY))
         {
-            body.move({-50.f, 0.f});
+            hitbox.move({-5.f, 0.f});
+            isWalking = true;
+            facingRight = false;
         }
     }
+    updateSpritePosition();
+    animateWalk();
     
 }
 
@@ -63,11 +95,11 @@ void player::gravity()
 {
     velocityY += 0.5f;
 
-    body.move({0.f, velocityY});
+    hitbox.move({0.f, velocityY});
 
-    float playerCenterX = body.getPosition().x + body.getSize().x / 2.f;
+    float playerCenterX = hitbox.getPosition().x + hitbox.getSize().x / 2.f;
 
-    float playerBottom = body.getPosition().y + body.getSize().y;
+    float playerBottom = hitbox.getPosition().y + hitbox.getSize().y + 1;
 
     if (velocityY > 0 &&
         worldMap->isSolid(playerCenterX, playerBottom))
@@ -75,14 +107,62 @@ void player::gravity()
         float groundY =
             worldMap->getGroundY(playerCenterX, playerBottom);
 
-        body.setPosition({
-            body.getPosition().x,
-            groundY - body.getSize().y
+        hitbox.setPosition({
+            hitbox.getPosition().x,
+            groundY - hitbox.getSize().y
         });
 
         velocityY = 0.f;
         onGround = true;
     }
 
+    updateSpritePosition();
     
+}
+
+void player::updateSpritePosition()
+{
+    playerSprite.setPosition({hitbox.getPosition().x + hitbox.getSize().x / 2.f, hitbox.getPosition().y + hitbox.getSize().y});
+}
+
+void player::animateWalk()
+{
+    if (!isWalking)
+    {
+        currentFrame = 0;
+
+        playerSprite.setTexture(playerTexture);
+        playerSprite.setTextureRect(
+            sf::IntRect({0, 0}, {100, 100})
+        );
+
+        return;
+    }
+
+    if (animationClock.getElapsedTime().asSeconds() >= 0.1f)
+    {
+        currentFrame++;
+
+        if (currentFrame >= 8)
+        {
+            currentFrame = 0;
+        }
+
+        playerSprite.setTexture(walkTexture);
+
+        playerSprite.setTextureRect(
+            sf::IntRect({currentFrame * 100, 0}, {100, 100})
+        );
+
+        animationClock.restart();
+
+        if (facingRight)
+        {
+            playerSprite.setScale({3.125f, 3.125f});
+        }
+        else 
+        {
+            playerSprite.setScale({-3.125f, 3.125f});
+        }
+    }
 }

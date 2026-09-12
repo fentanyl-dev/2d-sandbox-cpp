@@ -10,22 +10,22 @@ void map::loadMap()
     ifstream mapFile("map.txt");
     string line;
 
-    if (!sky.loadFromFile("sky.png"))
+    if (!sky.loadFromFile("assets/world/sky.png"))
     {
         cout << "Nie udalo sie wczytac pliku sky" << endl;
     }
     
-    if (!grass.loadFromFile("grass.png"))
+    if (!grass.loadFromFile("assets/world/grass.png"))
     {
         cout << "Nie udalo sie wczytac pliku grass";
     }
 
-    if (!dirt.loadFromFile("dirt.png"))
+    if (!dirt.loadFromFile("assets/world/dirt.png"))
     {
         cout << "Nie udalo sie wczytac pliku dirt";
     }
     
-    if (!stone.loadFromFile("stone1.png"))
+    if (!stone.loadFromFile("assets/world/stone1.png"))
     {
         cout << "Nie udalo sie wczytac pliku stone";
     }
