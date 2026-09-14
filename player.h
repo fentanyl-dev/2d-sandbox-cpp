@@ -28,4 +28,5 @@ class player
         void gravity();
         void updateSpritePosition();
         void animateWalk();
+        void animateIdle();
 };

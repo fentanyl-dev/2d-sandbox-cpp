@@ -6,9 +6,11 @@ using namespace std;
 
 int main() 
 {
-    sf::RenderWindow window(sf::VideoMode({1920, 1080}), "Terraria");
+    sf::RenderWindow window(sf::VideoMode({1920, 1080}), "RPG GAME");
 
     window.setFramerateLimit(60);
+
+    sf::View gameView(sf::FloatRect({0.f, 0.f}, {480.f, 270.f}));
 
     map myMap;
     myMap.loadMap();
@@ -28,6 +30,10 @@ int main()
         Player.move();
         Player.jump();
         Player.gravity();
+
+        window.clear();
+
+        window.setView(gameView);
 
         myMap.draw(window);
         Player.draw(window);

@@ -8,13 +8,20 @@ class map
 {
 private:
     std::vector<std::string> mapData;
-     float tileSize = 50.f;
-     float mapOffsetY = 280.f;
+     float tileSize = 16.f;
+     float mapOffsetY = 150.f;
+
      sf::Texture sky;
-     sf::Texture grass;
-     sf::Texture dirt;
-     sf::Texture stone;
+     sf::Sprite skysprite;
+
+    sf::Texture tilesetTexture;
+    sf::Sprite tileSprite;
+
+    sf::IntRect getTileRect(char tileType);
+
 public:
+    map();
+
     void loadMap();
     void draw(sf::RenderWindow& window);
     bool isSolid(float x, float y);

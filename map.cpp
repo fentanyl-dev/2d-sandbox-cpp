@@ -5,31 +5,21 @@
 
 using namespace std;
 
+#include "map.h"
+#include <fstream>
+#include <iostream>
+
+using namespace std;
+
+map::map() : skysprite(sky), tileSprite(tilesetTexture)
+{
+
+}
+
 void map::loadMap()
 {
     ifstream mapFile("map.txt");
     string line;
-
-    if (!sky.loadFromFile("assets/world/sky.png"))
-    {
-        cout << "Nie udalo sie wczytac pliku sky" << endl;
-    }
-    
-    if (!grass.loadFromFile("assets/world/grass.png"))
-    {
-        cout << "Nie udalo sie wczytac pliku grass";
-    }
-
-    if (!dirt.loadFromFile("assets/world/dirt.png"))
-    {
-        cout << "Nie udalo sie wczytac pliku dirt";
-    }
-    
-    if (!stone.loadFromFile("assets/world/stone1.png"))
-    {
-        cout << "Nie udalo sie wczytac pliku stone";
-    }
-    
     
     if (!mapFile)
     {
@@ -44,79 +34,73 @@ void map::loadMap()
             mapData.push_back(line);
         }
     }
+
+    if (!sky.loadFromFile("assets/world/sky.png"))
+    {
+        cout << "Nie udalo sie wczytac pliku sky" << endl;
+    }
+    sky.setSmooth(false);
+    sky.setRepeated(true); 
+
+    skysprite.setTexture(sky);
+
+    float skyWidth = sky.getSize().x;
+    float skyHeight = sky.getSize().y;
+
+    skysprite.setTextureRect(sf::IntRect({0, 0}, {2000, static_cast<int>(skyHeight)}));
     
+    skysprite.setPosition({0.f, 0.f});
+    
+
+    if (!tilesetTexture.loadFromFile("assets/world/Terrain.png"))
+    {
+        cout << "Nie udalo sie wczytac tekstur mapy" << endl;
+    }
+    tilesetTexture.setSmooth(false);
+
+    tileSprite.setTexture(tilesetTexture);
+    
+}
+
+sf::IntRect map::getTileRect(char tileType)
+{
+    switch (tileType)
+    {
+        case '1': return sf::IntRect({16, 0}, {16, 16});  // Trawa góra (środek)
+        case '2': return sf::IntRect({16, 16}, {16, 16}); // Ziemia (wypełnienie)
+        case '3': return sf::IntRect({0, 0}, {16, 16});   // Trawa LEWA krawędź
+        case '4': return sf::IntRect({32, 0}, {16, 16});  // Trawa PRAWA krawędź
+        case '5': return sf::IntRect({0, 16}, {16, 16});  // Ziemia LEWA ściana
+        case '6': return sf::IntRect({32, 16}, {16, 16}); // Ziemia PRAWA ściana
+        default:  return sf::IntRect({0, 0}, {0, 0});
+    }
 }
 
 void map::draw(sf::RenderWindow& window)
 {
+    window.draw(skysprite);
 
-    sf::Sprite skySprite(sky);
-
-    skySprite.setScale({3.3333f, 3.3333f});
-
-    window.draw(skySprite);
-
-    sf::Sprite grassSprite(grass);    
-
-    grassSprite.setScale({3.125f, 3.125f});
-
-    sf::Sprite dirtSprite(dirt);
-
-    dirtSprite.setScale({3.125f, 3.125f});
-
-    sf::Sprite stoneSprite(stone);
-
-    stoneSprite.setScale({3.125f, 3.125f});
-
-    for (int y = 0; y < mapData.size(); y++)
+    for (size_t y = 0; y < mapData.size(); y++)
     {
-        for (int x = 0; x < mapData[y].size(); x++)
+        for (size_t x = 0; x < mapData[y].size(); x++)
         {
-            sf::RectangleShape tile;
-            tile.setSize({tileSize, tileSize});
-            tile.setPosition({x * tileSize, y * tileSize + mapOffsetY});
+            char tileType = mapData[y][x];
 
-            // Powietrze
-
-            if (mapData[y][x] == '0')
+        // POWIETRZE
+            if (tileType == '0')
             {
                 continue;
             }
 
-            //Trawa
+            tileSprite.setPosition({x * tileSize, y * tileSize + mapOffsetY});
 
-            else if (mapData[y][x] == '1')
-            {
-                grassSprite.setPosition({x * tileSize, y * tileSize + mapOffsetY});
-                window.draw(grassSprite);
-                continue;
-            }
+            tileSprite.setTextureRect(getTileRect(tileType));
 
-            // Ziemia
-
-            else if (mapData[y][x] == '2')
-            {
-                dirtSprite.setPosition({x * tileSize, y * tileSize + mapOffsetY});
-                window.draw(dirtSprite);
-                continue;
-            }
-
-            //Kamienie
-
-            else if (mapData[y][x] == '3')
-            {
-                stoneSprite.setPosition({x * tileSize, y * tileSize + mapOffsetY});
-                window.draw(stoneSprite);
-                continue;
-            }
-
-            window.draw(tile);
+            window.draw(tileSprite);
         }
-        
     }
-    
 }
-
+    
 bool map::isSolid(float x, float y)
 {
     int tileX = x / tileSize; 

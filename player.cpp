@@ -18,8 +18,8 @@ player::player(map* worldMap):playerSprite(playerTexture)
     }
     
 
-    hitbox.setSize({50.f, 50.f});
-    hitbox.setPosition({500.f, 350.f});
+    hitbox.setSize({16.f, 32.f});
+    hitbox.setPosition({100.f, 100.f});
 
     playerSprite.setTexture(walkTexture);
     playerSprite.setTextureRect(sf::IntRect({0, 0}, {100,100}));
@@ -28,10 +28,13 @@ player::player(map* worldMap):playerSprite(playerTexture)
 
     playerSprite.setOrigin({50.f, 57.f}); 
 
-    playerSprite.setScale({3.125f, 3.125f});
+    playerSprite.setScale({1.f, 1.f});
 
      onGround = true;
      velocityY = 0.f;
+
+     playerTexture.setSmooth(false);
+     walkTexture.setSmooth(false);
 
      updateSpritePosition();
 
@@ -129,13 +132,7 @@ void player::animateWalk()
 {
     if (!isWalking)
     {
-        currentFrame = 0;
-
-        playerSprite.setTexture(playerTexture);
-        playerSprite.setTextureRect(
-            sf::IntRect({0, 0}, {100, 100})
-        );
-
+        animateIdle();
         return;
     }
 
@@ -158,11 +155,30 @@ void player::animateWalk()
 
         if (facingRight)
         {
-            playerSprite.setScale({3.125f, 3.125f});
+            playerSprite.setScale({1.f, 1.f});
         }
         else 
         {
-            playerSprite.setScale({-3.125f, 3.125f});
+            playerSprite.setScale({-1.f, 1.f});
         }
     }
+}
+
+void player::animateIdle()
+{
+    if (animationClock.getElapsedTime().asSeconds() >= 0.1f)
+    {
+        currentFrame++;
+        if (currentFrame >= 6)
+        {
+            currentFrame = 0;
+        }
+
+        playerSprite.setTexture(playerTexture);
+
+        playerSprite.setTextureRect(sf::IntRect({currentFrame * 100, 0}, {100, 100}));
+
+        animationClock.restart();
+    }
+    
 }
