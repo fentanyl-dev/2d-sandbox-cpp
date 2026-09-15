@@ -16,6 +16,11 @@ player::player(map* worldMap):playerSprite(playerTexture)
     {
         cout << "Nie udalo sie wczytac tekstury chodzenia postaci!";
     }
+
+    if (!attackTexture.loadFromFile("assets/player/attack/Soldier_Attack01.png"))
+    {
+        cout << "Nie udalo sie wczytac tekstru ataku postaci";
+    }
     
 
     hitbox.setSize({16.f, 32.f});
@@ -35,6 +40,7 @@ player::player(map* worldMap):playerSprite(playerTexture)
 
      playerTexture.setSmooth(false);
      walkTexture.setSmooth(false);
+     attackTexture.setSmooth(false);
 
      updateSpritePosition();
 
@@ -76,7 +82,15 @@ void player::move()
         }
     }
     updateSpritePosition();
-    animateWalk();
+
+    if (isAttacking)
+    {
+        animateAttack();
+    }
+    else
+    {
+        animateWalk();
+    }
     
 }
 
@@ -87,7 +101,7 @@ void player::jump()
     {
         if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Space))
         {
-            velocityY = -10.f;
+            velocityY = -7.f;
             onGround = false;
         }
     }
@@ -181,4 +195,49 @@ void player::animateIdle()
         animationClock.restart();
     }
     
+}
+
+void player::animateAttack()
+{
+    if (animationClock.getElapsedTime().asSeconds() >= 0.1f)
+    {
+        attackFrame++;
+
+        if (attackFrame >= 6)
+        {
+            attackFrame = 0;
+            isAttacking = false;
+            return;
+        }
+
+        playerSprite.setTexture(attackTexture);
+
+        playerSprite.setTextureRect(sf::IntRect({attackFrame * 100, 0}, {100, 100}));
+
+        animationClock.restart();
+    }
+    
+}
+
+void player::attack()
+{
+    if (!isAttacking)
+    {
+        isAttacking = true;
+        attackFrame = 0;
+        animationClock.restart();
+
+        playerSprite.setTexture(attackTexture);
+        playerSprite.setTextureRect(sf::IntRect({100, 0}, {100, 100}));
+    }
+    
+}
+
+sf::Vector2f player::getPosition()
+{
+    return 
+    {
+        hitbox.getPosition().x + hitbox.getSize().x / 2.f,
+        hitbox.getPosition().y + hitbox.getSize().y / 2.f
+    };
 }

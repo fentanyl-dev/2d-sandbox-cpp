@@ -22,6 +22,8 @@ private:
 public:
     map();
 
+    sf::Vector2f getMapSize();
+
     void loadMap();
     void draw(sf::RenderWindow& window);
     bool isSolid(float x, float y);

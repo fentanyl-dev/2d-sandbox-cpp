@@ -129,3 +129,11 @@ float map::getGroundY(float x, float y)
 
     return tileY * tileSize + mapOffsetY;
 }
+
+sf::Vector2f map::getMapSize()
+{
+    float width = mapData[0].size() * tileSize;
+    float height= mapData.size() * tileSize + mapOffsetY;
+
+    return {width, height};
+}
