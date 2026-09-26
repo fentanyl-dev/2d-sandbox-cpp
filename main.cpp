@@ -2,6 +2,9 @@
 #include "map.h"
 #include "player.h"
 #include "inventory.h"
+#include "decoration.h"
+
+#include <vector>
 #include <iostream>
 
 using namespace std;
@@ -23,6 +26,21 @@ int main()
     player Player(&myMap);
 
     Inventory inventory;
+
+     sf::Texture decorTexture;
+    if (!decorTexture.loadFromFile("assets/decoration/WoodTileset.png"))
+    {
+        cout << "Nie udalo sie wczytac tekstur dekoracji" << endl;
+    }
+    
+    float groundY = 198.f;
+
+    std::vector<Decoration> decorations;
+    decorations.emplace_back(decorTexture, DecorationType::treeLarge, sf::Vector2f(100.f, groundY));
+    decorations.emplace_back(decorTexture, DecorationType::singpost, sf::Vector2f(270.f, groundY));
+    decorations.emplace_back(decorTexture, DecorationType::barrel, sf::Vector2f(400.f, groundY));
+    decorations.emplace_back(decorTexture, DecorationType::crate, sf::Vector2f(430.f, groundY));
+    decorations.emplace_back(decorTexture, DecorationType::treeMedium, sf::Vector2f(480.f, groundY));
 
     while (window.isOpen())
     {
@@ -48,6 +66,7 @@ int main()
                 }
             }
         }
+
         Player.move();
         Player.jump();
         Player.gravity();
@@ -84,9 +103,17 @@ int main()
         window.clear();
 
         window.setView(gameView);
-        
+
         myMap.draw(window);
+
+        for (const auto& decor : decorations)
+        {
+            decor.draw(window);
+        }
+        
         Player.draw(window);
+
+        // window.setView(window.getDefaultView());
         inventory.draw(window);
 
         window.display();
