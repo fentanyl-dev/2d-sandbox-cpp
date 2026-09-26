@@ -6,6 +6,7 @@
 
 #include <vector>
 #include <iostream>
+#include <cmath>
 
 using namespace std;
 
@@ -52,18 +53,45 @@ int main()
             }
             if (event->is<sf::Event::MouseButtonPressed>())
             {
+                const auto* mousePress = event->getIf<sf::Event::MouseButtonPressed>();
+
                 if (event->getIf<sf::Event::MouseButtonPressed>()->button == sf::Mouse::Button::Left)
                 {
                     Player.attack();
                 }
-                
+
+                if (mousePress->button == sf::Mouse::Button::Right)
+                {
+                    sf::Vector2i mousePixelPos = sf::Mouse::getPosition(window);
+                    sf::Vector2f worldPos = window.mapPixelToCoords(mousePixelPos, gameView);
+
+                    float maxReach = 64.f;
+                    sf::Vector2f playerPos = Player.getPosition();
+
+                    sf::Vector2f diff = worldPos - playerPos;
+
+                    float distance = std::sqrt(diff.x * diff.x + diff.y * diff.y);
+
+                    if (distance <= maxReach)
+                    {
+                        myMap.destroyTile(worldPos.x, worldPos.y);
+                    }
+                    
+                }
             }
+            
             if (const auto* keyPressed = event->getIf<sf::Event::KeyPressed>())
             {
                 if (keyPressed->code == sf::Keyboard::Key::I)
                 {
                     inventory.toggle();
                 }
+
+                if (keyPressed->code == sf::Keyboard::Key::Num1) inventory.selectSlot(0);
+                if (keyPressed->code == sf::Keyboard::Key::Num2) inventory.selectSlot(1);
+                if (keyPressed->code == sf::Keyboard::Key::Num3) inventory.selectSlot(2);
+                if (keyPressed->code == sf::Keyboard::Key::Num4) inventory.selectSlot(3);
+                if (keyPressed->code == sf::Keyboard::Key::Num5) inventory.selectSlot(4);
             }
         }
 
@@ -113,7 +141,7 @@ int main()
         
         Player.draw(window);
 
-        // window.setView(window.getDefaultView());
+        window.setView(window.getDefaultView());
         inventory.draw(window);
 
         window.display();

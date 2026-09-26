@@ -137,3 +137,22 @@ sf::Vector2f map::getMapSize()
 
     return {width, height};
 }
+
+bool map::destroyTile(float worldX, float worldY)
+{
+    int tileX = static_cast<int>(worldX / tileSize);
+    int tileY = static_cast<int>((worldY - mapOffsetY) / tileSize);
+
+    if (tileY >= 0 && tileY < mapData.size())
+    {
+        if (tileX >= 0 && tileX < mapData[tileY].size())
+        {
+            if (mapData[tileY][tileX] != '0')
+            {
+                mapData[tileY][tileX] = '0';
+                return true;
+            }
+        }
+    }
+    return false;
+}

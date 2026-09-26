@@ -28,4 +28,6 @@ public:
     void draw(sf::RenderWindow& window);
     bool isSolid(float x, float y);
     float getGroundY(float x, float y);
+
+    bool destroyTile(float worldX, float worldY);
 };
