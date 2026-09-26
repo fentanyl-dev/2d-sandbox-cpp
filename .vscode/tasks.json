@@ -6,22 +6,20 @@
             "label": "C/C++: clang++ build active file",
             "command": "/usr/bin/clang++",
             "args": [
-            "-std=c++17",
-            "-fcolor-diagnostics",
-            "-fansi-escape-codes",
-            "-g",
-            "${workspaceFolder}/main.cpp",
-            "${workspaceFolder}/map.cpp",
-            "${workspaceFolder}/player.cpp",
-            "-o",
-            "${workspaceFolder}/main",
-            "-L/usr/local/lib",
-            "-lsfml-graphics",
-            "-lsfml-window",
-            "-lsfml-system"
+                "-std=c++17",
+                "-fcolor-diagnostics",
+                "-fansi-escape-codes",
+                "-g",
+                "${workspaceFolder}/*.cpp",
+                "-o",
+                "${workspaceFolder}/main",
+                "-L/usr/local/lib",
+                "-lsfml-graphics",
+                "-lsfml-window",
+                "-lsfml-system"
             ],
             "options": {
-                "cwd": "${fileDirname}"
+                "cwd": "${workspaceFolder}"
             },
             "problemMatcher": [
                 "$gcc"

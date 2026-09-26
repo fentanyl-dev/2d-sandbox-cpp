@@ -1,6 +1,7 @@
 #include <SFML/Graphics.hpp>
 #include "map.h"
 #include "player.h"
+#include "inventory.h"
 #include <iostream>
 
 using namespace std;
@@ -21,6 +22,8 @@ int main()
 
     player Player(&myMap);
 
+    Inventory inventory;
+
     while (window.isOpen())
     {
         while (const optional event = window.pollEvent())
@@ -37,8 +40,13 @@ int main()
                 }
                 
             }
-            
-            
+            if (const auto* keyPressed = event->getIf<sf::Event::KeyPressed>())
+            {
+                if (keyPressed->code == sf::Keyboard::Key::I)
+                {
+                    inventory.toggle();
+                }
+            }
         }
         Player.move();
         Player.jump();
@@ -76,9 +84,10 @@ int main()
         window.clear();
 
         window.setView(gameView);
-
+        
         myMap.draw(window);
         Player.draw(window);
+        inventory.draw(window);
 
         window.display();
     }
