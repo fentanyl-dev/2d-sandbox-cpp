@@ -1,8 +1,8 @@
 #include "inventory.h"
 
-Inventory::Inventory() : inventorySprite(inventoryTexture)
+Inventory::Inventory() : inventorySprite(inventoryTexture), amountText(font)
 {
-    slots.resize(5);
+    slots.resize(25);
 
     if (!inventoryTexture.loadFromFile("assets/inventory/Inventory.png"))
     {
@@ -14,6 +14,19 @@ Inventory::Inventory() : inventorySprite(inventoryTexture)
         inventorySprite.setTextureRect(sf::IntRect({440, 0}, {111, 107}));
         inventorySprite.setScale({2.2f, 2.2f}); 
         inventorySprite.setOrigin({111.f, 0.f}); 
+    }
+
+    if (!font.openFromFile("assets/arial.ttf"))
+    {
+        cout << "Brak pliku czcionki assets/arial.ttf (ilosci przedmiotow nie beda wyswietlane)" << endl;
+    }
+    else
+    {
+        amountText.setFont(font);
+        amountText.setCharacterSize(12);
+        amountText.setFillColor(sf::Color::White);
+        amountText.setOutlineColor(sf::Color::Black);
+        amountText.setOutlineThickness(1.f);
     }
 
     float slotSize = 42.f;
@@ -33,6 +46,48 @@ Inventory::Inventory() : inventorySprite(inventoryTexture)
     backgroundBar.setFillColor(sf::Color(20, 18, 24, 200));
     backgroundBar.setOutlineColor(sf::Color(60, 55, 70));
     backgroundBar.setOutlineThickness(1.5f);
+}
+
+bool Inventory::addItem(int itemID, int amount)
+{
+    for (auto& slot : slots)
+    {
+        if (slot.itemID == itemID)
+        {
+            slot.amount += amount;
+            return true;
+        }
+    }
+    for (auto& slot : slots)
+    {
+        if (slot.itemID == 0)
+        {
+            slot.itemID = itemID;
+            slot.amount = amount;
+            return true;
+        }
+    }
+    return false; 
+}
+
+inventorySlot Inventory::getSelectedItem() const
+{
+    return slots[selectedSlot];
+}
+
+bool Inventory::useSelectedItem(int amount)
+{
+    if (slots[selectedSlot].itemID != 0)
+    {
+        slots[selectedSlot].amount -= amount;
+        if (slots[selectedSlot].amount <= 0)
+        {
+            slots[selectedSlot].itemID = 0;
+            slots[selectedSlot].amount = 0;
+        }
+        return true;
+    }
+    return false;
 }
 
 void Inventory::toggle()
@@ -69,12 +124,31 @@ void Inventory::draw(sf::RenderWindow& window)
     backgroundBar.setPosition({startX - 6.f, startY - 6.f});
     window.draw(backgroundBar);
 
+    sf::RectangleShape itemPlaceholder({26.f, 26.f});
+
     for (int i = 0; i < 5; i++)
     {
         sf::Vector2f pos(startX + i * (slotSize + padding), startY);
 
         slotBox.setPosition(pos);
         window.draw(slotBox);
+
+        if (slots[i].itemID != 0)
+        {
+            if (slots[i].itemID == 1) itemPlaceholder.setFillColor(sf::Color::Red);     // np. ID 1 = Czerwony
+            else if (slots[i].itemID == 2) itemPlaceholder.setFillColor(sf::Color::Green); // np. ID 2 = Zielony
+            else itemPlaceholder.setFillColor(sf::Color::Yellow);
+
+            itemPlaceholder.setPosition({pos.x + 8.f, pos.y + 8.f});
+            window.draw(itemPlaceholder);
+
+            if (slots[i].amount > 1 && font.getInfo().family != "")
+            {
+                amountText.setString(to_string(slots[i].amount));
+                amountText.setPosition({pos.x + slotSize - 16.f, pos.y + slotSize - 18.f});
+                window.draw(amountText);
+            }
+        }
 
         if (i == selectedSlot)
         {
@@ -83,7 +157,6 @@ void Inventory::draw(sf::RenderWindow& window)
         }
     }
 
-    
     if (isOpen)
     {
         float rightX = center.x + (size.x / 2.f);
@@ -91,5 +164,28 @@ void Inventory::draw(sf::RenderWindow& window)
 
         inventorySprite.setPosition({rightX - 10.f, topY + 10.f});
         window.draw(inventorySprite);
+
+        float gridStartX = rightX - 215.f; 
+        float gridStartY = topY + 45.f;
+        float slotGridSize = 38.f; 
+
+        for (int i = 5; i < 25; i++)
+        {
+            int indexInGrid = i - 5;
+            int col = indexInGrid % 5;
+            int row = indexInGrid / 5;
+
+            sf::Vector2f slotPos(gridStartX + col * slotGridSize, gridStartY + row * slotGridSize);
+
+            if (slots[i].itemID != 0)
+            {
+                if (slots[i].itemID == 1) itemPlaceholder.setFillColor(sf::Color::Red);
+                else if (slots[i].itemID == 2) itemPlaceholder.setFillColor(sf::Color::Green);
+                else itemPlaceholder.setFillColor(sf::Color::Yellow);
+
+                itemPlaceholder.setPosition({slotPos.x + 6.f, slotPos.y + 6.f});
+                window.draw(itemPlaceholder);
+            }
+        }
     }
 }

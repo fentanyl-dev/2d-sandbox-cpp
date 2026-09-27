@@ -28,6 +28,9 @@ int main()
 
     Inventory inventory;
 
+    inventory.addItem(1, 3);
+    inventory.addItem(2, 1);
+
      sf::Texture decorTexture;
     if (!decorTexture.loadFromFile("assets/decoration/WoodTileset.png"))
     {
