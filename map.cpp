@@ -99,6 +99,11 @@ void map::draw(sf::RenderWindow& window)
             window.draw(tileSprite);
         }
     }
+    for (const auto& drop : droppedItems)
+    {
+        window.draw(drop.item);
+    }
+    
 }
     
 bool map::isSolid(float x, float y)
@@ -142,6 +147,7 @@ bool map::destroyTile(float worldX, float worldY)
 {
     int tileX = static_cast<int>(worldX / tileSize);
     int tileY = static_cast<int>((worldY - mapOffsetY) / tileSize);
+    
 
     if (tileY >= 0 && tileY < mapData.size())
     {
@@ -149,6 +155,22 @@ bool map::destroyTile(float worldX, float worldY)
         {
             if (mapData[tileY][tileX] != '0')
             {
+                char tileType = mapData[tileY][tileX];
+                int itemID = tileType - '0';
+
+                float dropX = tileX * tileSize + 4.f;
+                float dropY = tileY * tileSize + mapOffsetY + 4.f;
+
+                droppedItem newItem;
+                newItem.position = {dropX, dropY};
+                newItem.itemID = itemID;
+
+                newItem.item.setPosition(newItem.position);
+                newItem.item.setSize({8.f, 8.f});
+                newItem.item.setFillColor(sf::Color::White);
+
+                droppedItems.push_back(newItem);
+
                 mapData[tileY][tileX] = '0';
                 return true;
             }
