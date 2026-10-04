@@ -28,8 +28,8 @@ int main()
 
     Inventory inventory;
 
-    inventory.addItem(1, 3);
-    inventory.addItem(2, 1);
+    inventory.addItem(3, 1);
+    inventory.addItem(1, 1);
 
      sf::Texture decorTexture;
     if (!decorTexture.loadFromFile("assets/decoration/WoodTileset.png"))
@@ -101,7 +101,9 @@ int main()
         Player.move();
         Player.jump();
         Player.gravity();
-
+        
+        myMap.checkItemPickup(Player.getPosition(), inventory);
+        
         sf::Vector2f cameraPos = Player.getPosition();
 
         float halfWidth = gameView.getSize().x / 2.f;

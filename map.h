@@ -4,6 +4,12 @@
 #include <string>
 #include <SFML/Graphics.hpp>
 
+//Klasa inventory
+
+class Inventory;
+
+//Struktura od wyrzucania itemow
+
 struct droppedItem
 {
     sf::Vector2f position;
@@ -11,11 +17,13 @@ struct droppedItem
     int itemID = 0;
 };
 
+//
 
 class map
 {
 private:
     std::vector<std::string> mapData;
+
     float tileSize = 16.f;
     float mapOffsetY = 150.f;
 
@@ -32,12 +40,15 @@ private:
 public:
     map();
 
-    sf::Vector2f getMapSize();
-
     void loadMap();
+
     void draw(sf::RenderWindow& window);
+
+    sf::Vector2f getMapSize();
     bool isSolid(float x, float y);
     float getGroundY(float x, float y);
 
     bool destroyTile(float worldX, float worldY);
+
+    void checkItemPickup(sf::Vector2f playerPos, Inventory& inventory);
 };

@@ -1,20 +1,19 @@
 #include "map.h"
+#include "inventory.h"
 #include <fstream>
 #include <iostream>
 #include <SFML/Graphics.hpp>
 
 using namespace std;
 
-#include "map.h"
-#include <fstream>
-#include <iostream>
-
-using namespace std;
+//Konstruktor do inicjalizacji obiekty sprita
 
 map::map() : skysprite(sky), tileSprite(tilesetTexture)
 {
 
 }
+
+//Wczytywanie pliku map.txt do wektora
 
 void map::loadMap()
 {
@@ -51,6 +50,7 @@ void map::loadMap()
     
     skysprite.setPosition({0.f, 0.f});
     
+    //Ladowanie tekstury kafelkami
 
     if (!tilesetTexture.loadFromFile("assets/world/Terrain.png"))
     {
@@ -61,6 +61,8 @@ void map::loadMap()
     tileSprite.setTexture(tilesetTexture);
     
 }
+
+//Mapowanie mapy na podstawie znakow
 
 sf::IntRect map::getTileRect(char tileType)
 {
@@ -75,6 +77,8 @@ sf::IntRect map::getTileRect(char tileType)
         default:  return sf::IntRect({0, 0}, {0, 0});
     }
 }
+
+//Rysowanie tła 
 
 void map::draw(sf::RenderWindow& window)
 {
@@ -99,13 +103,18 @@ void map::draw(sf::RenderWindow& window)
             window.draw(tileSprite);
         }
     }
+
+    //Rysowanie klockow na ziemi 
+
     for (const auto& drop : droppedItems)
     {
         window.draw(drop.item);
     }
     
 }
-    
+
+//Sprawdzanie czy punkt x,y koliduje na mapie
+
 bool map::isSolid(float x, float y)
 {
     int tileX = x / tileSize; 
@@ -128,12 +137,16 @@ bool map::isSolid(float x, float y)
     return true;
 }
 
+//Zwraca pozycje Y w kafelkach
+
 float map::getGroundY(float x, float y)
 {
     int tileY = (y - mapOffsetY) / tileSize;
 
     return tileY * tileSize + mapOffsetY;
 }
+
+//Zwraca wielkosc mapy
 
 sf::Vector2f map::getMapSize()
 {
@@ -142,6 +155,8 @@ sf::Vector2f map::getMapSize()
 
     return {width, height};
 }
+
+//Niszczenie kafelka na podanych wspolrzednych
 
 bool map::destroyTile(float worldX, float worldY)
 {
@@ -177,4 +192,25 @@ bool map::destroyTile(float worldX, float worldY)
         }
     }
     return false;
+}
+
+void map::checkItemPickup(sf::Vector2f playerPos, Inventory& inventory)
+{
+    float pickUpRange = 25.f;
+
+    for (auto it = droppedItems.begin(); it != droppedItems.end(); )
+    {
+        sf::Vector2f diff = it->position - playerPos;
+        float distance = std::sqrt(diff.x * diff.x + diff.y * diff.y);
+
+        if (distance <= pickUpRange)
+        {
+            if (inventory.addItem(it->itemID, 1))
+            {
+                it = droppedItems.erase(it);
+                continue;
+            }
+        }
+        ++it;
+    }
 }

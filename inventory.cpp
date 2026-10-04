@@ -1,5 +1,7 @@
 #include "inventory.h"
 
+//Konstruktor ktory inicjalizuje wektor slotow
+
 Inventory::Inventory() : inventorySprite(inventoryTexture), amountText(font)
 {
     slots.resize(25);
@@ -29,16 +31,22 @@ Inventory::Inventory() : inventorySprite(inventoryTexture), amountText(font)
         amountText.setOutlineThickness(1.f);
     }
 
+    //Konfigruacja wygladu pojedynczego slotu hotbara
+
     float slotSize = 42.f;
     slotBox.setSize({slotSize, slotSize});
     slotBox.setFillColor(sf::Color(35, 33, 42, 230));
     slotBox.setOutlineColor(sf::Color(85, 80, 95));
     slotBox.setOutlineThickness(2.f);
 
+    //Konfiguracja ramki zaznaczania slotu
+
     selectorBox.setSize({slotSize, slotSize});
     selectorBox.setFillColor(sf::Color::Transparent);
     selectorBox.setOutlineColor(sf::Color::White);
     selectorBox.setOutlineThickness(2.5f);
+
+    //Konfiguracja tla pod pasek hotbara
 
     float padding = 5.f;
     float totalWidth = (5 * slotSize) + (4 * padding) + 12.f;
@@ -46,7 +54,23 @@ Inventory::Inventory() : inventorySprite(inventoryTexture), amountText(font)
     backgroundBar.setFillColor(sf::Color(20, 18, 24, 200));
     backgroundBar.setOutlineColor(sf::Color(60, 55, 70));
     backgroundBar.setOutlineThickness(1.5f);
+
+    //Item
+
+    if (!swordTexture.loadFromFile("assets/items/sword.png"))
+    {
+        cout << "Nie mozna wczytac tekstury item - sword" << endl;
+    }
+    swordTexture.setSmooth(false);
+
+    if (!cakeTexture.loadFromFile("assets/items/cake.png"))
+    {
+        cout << "Nie mozna wczytac tekstury item - cake";
+    }
+    cakeTexture.setSmooth(false);
 }
+
+//Dodawanie itemu do inventory
 
 bool Inventory::addItem(int itemID, int amount)
 {
@@ -70,10 +94,14 @@ bool Inventory::addItem(int itemID, int amount)
     return false; 
 }
 
+//Zwraca dane przedmiotu lezacego 
+
 inventorySlot Inventory::getSelectedItem() const
 {
     return slots[selectedSlot];
 }
+
+//Odejmuje podana ilosc przedmiotu z akywtnego slotu
 
 bool Inventory::useSelectedItem(int amount)
 {
@@ -90,15 +118,21 @@ bool Inventory::useSelectedItem(int amount)
     return false;
 }
 
+//Przelaczanie widoku inventory
+
 void Inventory::toggle()
 {
     isOpen = !isOpen;
 }
 
+//Sprawdzanie czy inventory jest otwarte
+
 bool Inventory::getIsOpen() const
 {
     return isOpen;
 }
+
+//Ustawia aktywny slot hotbara 
 
 void Inventory::selectSlot(int index)
 {
@@ -107,6 +141,8 @@ void Inventory::selectSlot(int index)
         selectedSlot = index;
     }
 }
+
+//Rysuje interfejs ekwipunku
 
 void Inventory::draw(sf::RenderWindow& window)
 {
@@ -126,6 +162,9 @@ void Inventory::draw(sf::RenderWindow& window)
 
     sf::RectangleShape itemPlaceholder({26.f, 26.f});
 
+
+    //1. Rysowanie hotbara
+
     for (int i = 0; i < 5; i++)
     {
         sf::Vector2f pos(startX + i * (slotSize + padding), startY);
@@ -135,8 +174,12 @@ void Inventory::draw(sf::RenderWindow& window)
 
         if (slots[i].itemID != 0)
         {
-            if (slots[i].itemID == 1) itemPlaceholder.setFillColor(sf::Color::Red);     // np. ID 1 = Czerwony
-            else if (slots[i].itemID == 2) itemPlaceholder.setFillColor(sf::Color::Green); // np. ID 2 = Zielony
+            itemPlaceholder.setTexture(nullptr);
+            itemPlaceholder.setFillColor(sf::Color::White);
+
+            if (slots[i].itemID == 1) itemPlaceholder.setTexture(&cakeTexture);     // np. ID 1 = Czerwony
+            else if (slots[i].itemID == 2) itemPlaceholder.setFillColor(sf::Color::Green);
+            else if (slots[i].itemID == 3) itemPlaceholder.setTexture(&swordTexture);
             else itemPlaceholder.setFillColor(sf::Color::Yellow);
 
             itemPlaceholder.setPosition({pos.x + 8.f, pos.y + 8.f});
@@ -157,6 +200,8 @@ void Inventory::draw(sf::RenderWindow& window)
         }
     }
 
+    //Rysowanie pełnego ekwipunku 
+    
     if (isOpen)
     {
         float rightX = center.x + (size.x / 2.f);
@@ -179,8 +224,12 @@ void Inventory::draw(sf::RenderWindow& window)
 
             if (slots[i].itemID != 0)
             {
-                if (slots[i].itemID == 1) itemPlaceholder.setFillColor(sf::Color::Red);
+                itemPlaceholder.setTexture(nullptr);
+                itemPlaceholder.setFillColor(sf::Color::White);
+
+                if (slots[i].itemID == 1) itemPlaceholder.setTexture(&cakeTexture);
                 else if (slots[i].itemID == 2) itemPlaceholder.setFillColor(sf::Color::Green);
+                else if (slots[i].itemID == 3) itemPlaceholder.setTexture(&swordTexture);
                 else itemPlaceholder.setFillColor(sf::Color::Yellow);
 
                 itemPlaceholder.setPosition({slotPos.x + 6.f, slotPos.y + 6.f});
