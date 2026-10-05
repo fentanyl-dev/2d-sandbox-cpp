@@ -31,7 +31,7 @@ int main()
     inventory.addItem(3, 1);
     inventory.addItem(1, 1);
 
-     sf::Texture decorTexture;
+    sf::Texture decorTexture;
     if (!decorTexture.loadFromFile("assets/decoration/WoodTileset.png"))
     {
         cout << "Nie udalo sie wczytac tekstur dekoracji" << endl;
@@ -58,9 +58,19 @@ int main()
             {
                 const auto* mousePress = event->getIf<sf::Event::MouseButtonPressed>();
 
-                if (event->getIf<sf::Event::MouseButtonPressed>()->button == sf::Mouse::Button::Left)
+                if (mousePress->button == sf::Mouse::Button::Left)
                 {
-                    Player.attack();
+                    if (inventory.getIsOpen())
+                    {
+                        sf::Vector2i mousePixelPos = sf::Mouse::getPosition(window);
+                        sf::Vector2f guiMousePos = window.mapPixelToCoords(mousePixelPos, window.getDefaultView());
+
+                        inventory.handleMouseClick(guiMousePos, window);
+                    }
+                    else
+                    {
+                        Player.attack();
+                    }
                 }
 
                 if (mousePress->button == sf::Mouse::Button::Right)
@@ -79,7 +89,6 @@ int main()
                     {
                         myMap.destroyTile(worldPos.x, worldPos.y);
                     }
-                    
                 }
             }
             
