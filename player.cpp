@@ -241,3 +241,9 @@ sf::Vector2f player::getPosition()
         hitbox.getPosition().y + hitbox.getSize().y / 2.f
     };
 }
+
+void player::setPosition(sf::Vector2f newPos)
+{
+    hitbox.setPosition(newPos);
+    updateSpritePosition();
+}

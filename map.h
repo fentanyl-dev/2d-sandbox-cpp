@@ -4,6 +4,8 @@
 #include <string>
 #include <SFML/Graphics.hpp>
 
+#include "FastNoiseLite.h"
+
 //Klasa inventory
 
 class Inventory;
@@ -22,10 +24,10 @@ struct droppedItem
 class map
 {
 private:
-    std::vector<std::string> mapData;
+    std::vector<std::vector<int>> mapData;
 
     float tileSize = 16.f;
-    float mapOffsetY = 150.f;
+    float mapOffsetY = 0.f;
 
     sf::Texture sky;
     sf::Sprite skysprite;
@@ -33,7 +35,7 @@ private:
     sf::Texture tilesetTexture;
     sf::Sprite tileSprite;
 
-    sf::IntRect getTileRect(char tileType);
+    sf::IntRect getTileRect(int tileType);
 
     std::vector<droppedItem> droppedItems;
 
@@ -42,11 +44,15 @@ public:
 
     void loadMap();
 
+    void generateMap(int width, int height, int seed = 1337);
+
     void draw(sf::RenderWindow& window);
 
     sf::Vector2f getMapSize();
     bool isSolid(float x, float y);
     float getGroundY(float x, float y);
+
+    float getSurfaceY(float worldX);
 
     bool destroyTile(float worldX, float worldY);
 

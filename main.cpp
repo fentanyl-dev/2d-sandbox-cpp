@@ -19,12 +19,17 @@ int main()
     sf::View gameView(sf::FloatRect({0.f, 0.f}, {480.f, 270.f}));
 
     map myMap;
-    myMap.loadMap();
+    myMap.loadMap();                   
+    myMap.generateMap(200, 100, 12345);
+
+    player Player(&myMap);
+
+    float spawnX = 200.f;
+    float spawnY = myMap.getSurfaceY(spawnX);
+    Player.setPosition({spawnX, spawnY - 32.f});
 
     cout << "Map width: " << myMap.getMapSize().x << endl;
     cout << "Map height: " << myMap.getMapSize().y << endl;
-
-    player Player(&myMap);
 
     Inventory inventory;
 
@@ -103,7 +108,6 @@ int main()
                 if (keyPressed->code == sf::Keyboard::Key::Num2) inventory.selectSlot(1);
                 if (keyPressed->code == sf::Keyboard::Key::Num3) inventory.selectSlot(2);
                 if (keyPressed->code == sf::Keyboard::Key::Num4) inventory.selectSlot(3);
-                if (keyPressed->code == sf::Keyboard::Key::Num5) inventory.selectSlot(4);
             }
         }
 
@@ -160,5 +164,4 @@ int main()
 
         window.display();
     }
-    
 }

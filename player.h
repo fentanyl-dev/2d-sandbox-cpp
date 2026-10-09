@@ -25,6 +25,8 @@ class player
         map* worldMap;
 
     public:
+        void setPosition(sf::Vector2f newPos);
+
         player(map* worldMap);
         sf::Vector2f getPosition();
 
