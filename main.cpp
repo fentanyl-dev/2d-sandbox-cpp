@@ -3,12 +3,28 @@
 #include "player.h"
 #include "inventory.h"
 #include "decoration.h"
+#include "stats.h"
 
 #include <vector>
 #include <iostream>
 #include <cmath>
 
 using namespace std;
+
+void drawBar(sf::RenderWindow& window, sf::Vector2f pos, sf::Vector2f size, float ratio, sf::Color color)
+{
+    sf::RectangleShape back(size);
+    back.setPosition(pos);
+    back.setFillColor(sf::Color(20, 18, 24, 200));
+    back.setOutlineColor(sf::Color(60, 55, 70));
+    back.setOutlineThickness(2.f);
+    window.draw(back);
+
+    sf::RectangleShape fill({size.x * ratio, size.y});
+    fill.setPosition(pos);
+    fill.setFillColor(color);
+    window.draw(fill);
+}
 
 int main() 
 {
@@ -36,6 +52,8 @@ int main()
     inventory.addItem(3, 1);
     inventory.addItem(1, 1);
 
+    stats stats;
+
     sf::Texture decorTexture;
     if (!decorTexture.loadFromFile("assets/decoration/WoodTileset.png"))
     {
@@ -55,8 +73,20 @@ int main()
     addDecor(DecorationType::crate,      430.f);
     addDecor(DecorationType::treeMedium, 496.f);
 
+    sf::Clock frameClock;
+
     while (window.isOpen())
     {
+        float dt = frameClock.restart().asSeconds();
+        stats.update(dt);
+
+        if (stats.isDead())
+        {
+            stats.health = stats.maxHealth;
+            stats.mana = stats.maxMana;
+            Player.setPosition({spawnX, spawnY - 32.f});
+        }
+
         while (const optional event = window.pollEvent())
         {
             if (event->is<sf::Event::Closed>())
@@ -107,6 +137,9 @@ int main()
                 {
                     inventory.toggle();
                 }
+
+                if (keyPressed->code == sf::Keyboard::Key::H) stats.takeDamage(10.f);
+                if (keyPressed->code == sf::Keyboard::Key::M) stats.useMana(10.f);
 
                 if (keyPressed->code == sf::Keyboard::Key::Num1) inventory.selectSlot(0);
                 if (keyPressed->code == sf::Keyboard::Key::Num2) inventory.selectSlot(1);
@@ -164,6 +197,10 @@ int main()
         Player.draw(window);
 
         window.setView(window.getDefaultView());
+
+        drawBar(window, {20.f, 20.f}, {300.f, 24.f}, stats.health / stats.maxHealth, sf::Color(200, 40, 40));
+        drawBar(window, {20.f, 52.f}, {300.f, 24.f}, stats.mana / stats.maxMana, sf::Color(50, 100, 220));
+
         inventory.draw(window);
 
         window.display();
