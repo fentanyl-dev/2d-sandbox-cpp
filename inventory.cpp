@@ -4,9 +4,70 @@
 
 using namespace std;
 
+namespace
+{
+    constexpr float UI_SCALE = 2.2f;
+
+    constexpr float SLOT_TEX_SIZE = 16.f;
+
+    constexpr float SLOT_PITCH = 17.f;
+
+    constexpr float GRID_X   = 40.f;
+    constexpr float GRID_Y   = 4.f;
+    constexpr float HOTBAR_X = 40.f;
+    constexpr float HOTBAR_Y = 83.f;
+    constexpr float SIDE_X   = 12.f;
+    constexpr float SIDE_Y   = 4.f;
+    constexpr float EXTRA_Y  = 83.f;
+
+    constexpr bool DEBUG_SLOTS = false;
+
+    sf::Vector2f computeInventoryPosition(const sf::View& view, const sf::Sprite& sprite)
+    {
+        sf::Vector2f center = view.getCenter();
+        sf::Vector2f size = view.getSize();
+        float spriteWidth = sprite.getGlobalBounds().size.x;
+
+        return { center.x + (size.x / 2.f) - spriteWidth - 16.f,
+                 center.y - (size.y / 2.f) + 20.f };
+    }
+
+    sf::Texture& terrainTexture()
+    {
+        static sf::Texture texture;
+        static bool loaded = false;
+
+        if (!loaded)
+        {
+            loaded = true;
+            if (!texture.loadFromFile("assets/world/Terrain.png"))
+            {
+                cout << "Nie udalo sie wczytac Terrain.png dla inventory!" << endl;
+            }
+            texture.setSmooth(false);
+        }
+        return texture;
+    }
+
+    sf::IntRect getTileItemRect(int itemID)
+    {
+        switch (itemID - 100)
+        {
+            case 2:  return sf::IntRect({16, 16}, {16, 16});
+            case 7:  return sf::IntRect({64, 0}, {16, 16});
+            case 8:  return sf::IntRect({0, 48}, {16, 16});
+            case 9:  return sf::IntRect({16, 48}, {16, 16});
+            case 10: return sf::IntRect({0, 32}, {16, 16});
+            case 11: return sf::IntRect({16, 32}, {16, 16});
+            case 12: return sf::IntRect({32, 32}, {16, 16});
+            default: return sf::IntRect({0, 0}, {0, 0});
+        }
+    }
+}
+
 Inventory::Inventory() : inventorySprite(inventoryTexture), amountText(font)
 {
-    slots.resize(26);
+    slots.resize(25);
 
     if (!inventoryTexture.loadFromFile("assets/inventory/Inventory.png"))
     {
@@ -14,10 +75,11 @@ Inventory::Inventory() : inventorySprite(inventoryTexture), amountText(font)
     }
     else
     {
+        inventoryTexture.setSmooth(false);
         inventorySprite.setTexture(inventoryTexture);
         inventorySprite.setTextureRect(sf::IntRect({440, 0}, {111, 107}));
-        inventorySprite.setScale({2.2f, 2.2f}); 
-        inventorySprite.setOrigin({0.f, 0.f}); 
+        inventorySprite.setScale({UI_SCALE, UI_SCALE});
+        inventorySprite.setOrigin({0.f, 0.f});
     }
 
     if (!font.openFromFile("assets/arial.ttf"))
@@ -33,7 +95,6 @@ Inventory::Inventory() : inventorySprite(inventoryTexture), amountText(font)
         amountText.setOutlineThickness(1.f);
     }
 
-    // Wygląd hotbara na dole ekranu (gdy ekwipunek jest zamknięty)
     float slotSize = 42.f;
     slotBox.setSize({slotSize, slotSize});
     slotBox.setFillColor(sf::Color(35, 33, 42, 230));
@@ -46,7 +107,7 @@ Inventory::Inventory() : inventorySprite(inventoryTexture), amountText(font)
     selectorBox.setOutlineThickness(2.5f);
 
     float padding = 5.f;
-    float totalWidth = (5 * slotSize) + (4 * padding) + 12.f;
+    float totalWidth = (4 * slotSize) + (3 * padding) + 12.f;
     backgroundBar.setSize({totalWidth, slotSize + 12.f});
     backgroundBar.setFillColor(sf::Color(20, 18, 24, 200));
     backgroundBar.setOutlineColor(sf::Color(60, 55, 70));
@@ -67,31 +128,30 @@ Inventory::Inventory() : inventorySprite(inventoryTexture), amountText(font)
 
 sf::Vector2f Inventory::getSlotPosition(int index, sf::Vector2f invPos)
 {
-    float s = 2.2f;
+    const float s = UI_SCALE;
 
-    // 1. Hotbar (0 - 4) -> dolny prawy pasek (5 slotów)
-    if (index >= 0 && index < 5)
+    if (index >= 0 && index < 4)
     {
-        return { invPos.x + (32.0f + index * 13.5f) * s, invPos.y + 83.5f * s };
+        return { invPos.x + (HOTBAR_X + index * SLOT_PITCH) * s,
+                 invPos.y + HOTBAR_Y * s };
     }
-    // 2. Siatka główna 4x4 (5 - 20) -> górna prawa siatka
-    else if (index >= 5 && index < 21)
+    else if (index >= 4 && index < 20)
     {
-        int gridIdx = index - 5;
+        int gridIdx = index - 4;
         int col = gridIdx % 4;
         int row = gridIdx / 4;
-        return { invPos.x + (32.0f + col * 17.0f) * s, invPos.y + (5.5f + row * 17.0f) * s };
+        return { invPos.x + (GRID_X + col * SLOT_PITCH) * s,
+                 invPos.y + (GRID_Y + row * SLOT_PITCH) * s };
     }
-    // 3. Lewy pionowy pasek 1x4 (21 - 24)
-    else if (index >= 21 && index < 25)
+    else if (index >= 20 && index < 24)
     {
-        int row = index - 21;
-        return { invPos.x + 5.5f * s, invPos.y + (5.5f + row * 17.0f) * s };
+        int row = index - 20;
+        return { invPos.x + SIDE_X * s,
+                 invPos.y + (SIDE_Y + row * SLOT_PITCH) * s };
     }
-    // 4. Pojedynczy slot lewy dolny (25)
-    else if (index == 25)
+    else if (index == 24)
     {
-        return { invPos.x + 5.5f * s, invPos.y + 83.5f * s };
+        return { invPos.x + SIDE_X * s, invPos.y + EXTRA_Y * s };
     }
 
     return { 0.f, 0.f };
@@ -116,7 +176,7 @@ bool Inventory::addItem(int itemID, int amount)
             return true;
         }
     }
-    return false; 
+    return false;
 }
 
 inventorySlot Inventory::getSelectedItem() const
@@ -142,7 +202,7 @@ bool Inventory::useSelectedItem(int amount)
 void Inventory::toggle()
 {
     isOpen = !isOpen;
-    draggedSlotIndex = -1; 
+    draggedSlotIndex = -1;
 }
 
 bool Inventory::getIsOpen() const
@@ -152,7 +212,7 @@ bool Inventory::getIsOpen() const
 
 void Inventory::selectSlot(int index)
 {
-    if (index >= 0 && index < 5)
+    if (index >= 0 && index < 4)
     {
         selectedSlot = index;
     }
@@ -162,17 +222,13 @@ void Inventory::handleMouseClick(sf::Vector2f mousePos, sf::RenderWindow& window
 {
     if (!isOpen) return;
 
-    sf::View currentView = window.getView();
-    sf::Vector2f center = currentView.getCenter();
-    sf::Vector2f size = currentView.getSize();
-
-    sf::Vector2f invPos(center.x + (size.x / 2.f) - 260.f, center.y - (size.y / 2.f) + 20.f);
+    sf::Vector2f invPos = computeInventoryPosition(window.getView(), inventorySprite);
+    const float slotSize = SLOT_TEX_SIZE * UI_SCALE;
 
     for (size_t i = 0; i < slots.size(); i++)
     {
-        sf::Vector2f pos = getSlotPosition(i, invPos);
-        float slotBoundSize = (i < 5) ? 24.f : 32.f;
-        sf::FloatRect slotBounds(pos, {slotBoundSize, slotBoundSize});
+        sf::Vector2f pos = getSlotPosition(static_cast<int>(i), invPos);
+        sf::FloatRect slotBounds(pos, {slotSize, slotSize});
 
         if (slotBounds.contains(mousePos))
         {
@@ -180,13 +236,13 @@ void Inventory::handleMouseClick(sf::Vector2f mousePos, sf::RenderWindow& window
             {
                 if (slots[i].itemID != 0)
                 {
-                    draggedSlotIndex = i;
+                    draggedSlotIndex = static_cast<int>(i);
                 }
             }
             else
             {
                 std::swap(slots[draggedSlotIndex], slots[i]);
-                draggedSlotIndex = -1; 
+                draggedSlotIndex = -1;
             }
             break;
         }
@@ -199,46 +255,72 @@ void Inventory::draw(sf::RenderWindow& window)
     sf::Vector2f center = currentView.getCenter();
     sf::Vector2f size = currentView.getSize();
 
-    sf::RectangleShape itemPlaceholder({26.f, 26.f});
+    sf::RectangleShape itemShape;
 
-    // 1. Rysowanie skróconego hotbara na dole ekranu, gdy ekwipunek NIE jest otwarty
+    auto applyItemTexture = [&](sf::RectangleShape& shape, int itemID)
+    {
+        if (itemID == 1)
+        {
+            shape.setTexture(&cakeTexture, true);
+        }
+        else if (itemID == 3)
+        {
+            shape.setTexture(&swordTexture, true);
+        }
+        else if (itemID >= 100)
+        {
+            shape.setTexture(&terrainTexture());
+            shape.setTextureRect(getTileItemRect(itemID));
+        }
+        else
+        {
+            shape.setFillColor(sf::Color::Yellow);
+        }
+    };
+
+    auto drawItem = [&](const inventorySlot& slot, sf::Vector2f slotPos, float slotWidth)
+    {
+        float itemSize = slotWidth * 0.75f;
+        float offset = (slotWidth - itemSize) / 2.f;
+
+        itemShape.setSize({itemSize, itemSize});
+        itemShape.setPosition({slotPos.x + offset, slotPos.y + offset});
+        itemShape.setTexture(nullptr);
+        itemShape.setFillColor(sf::Color::White);
+
+        applyItemTexture(itemShape, slot.itemID);
+
+        window.draw(itemShape);
+
+        if (slot.amount > 1 && font.getInfo().family != "")
+        {
+            amountText.setString(to_string(slot.amount));
+            amountText.setPosition({slotPos.x + slotWidth - 16.f, slotPos.y + slotWidth - 18.f});
+            window.draw(amountText);
+        }
+    };
+
     if (!isOpen)
     {
-        float slotSize = 42.f; 
+        float slotSize = 42.f;
         float padding = 5.f;
-        float totalSlotsWidth = (5 * slotSize) + (4 * padding);
+        float totalSlotsWidth = (4 * slotSize) + (3 * padding);
         float startX = center.x - (totalSlotsWidth / 2.f);
         float startY = center.y + (size.y / 2.f) - slotSize - 18.f;
 
         backgroundBar.setPosition({startX - 6.f, startY - 6.f});
         window.draw(backgroundBar);
 
-        for (int i = 0; i < 5; i++)
+        for (int i = 0; i < 4; i++)
         {
             sf::Vector2f pos(startX + i * (slotSize + padding), startY);
 
             slotBox.setPosition(pos);
             window.draw(slotBox);
 
-            if (slots[i].itemID != 0)
+            if (slots[i].itemID != 0 && i != draggedSlotIndex)
             {
-                itemPlaceholder.setSize({26.f, 26.f});
-                itemPlaceholder.setTexture(nullptr);
-                itemPlaceholder.setFillColor(sf::Color::White);
-
-                if (slots[i].itemID == 1) itemPlaceholder.setTexture(&cakeTexture);
-                else if (slots[i].itemID == 3) itemPlaceholder.setTexture(&swordTexture);
-                else itemPlaceholder.setFillColor(sf::Color::Yellow);
-
-                itemPlaceholder.setPosition({pos.x + 8.f, pos.y + 8.f});
-                window.draw(itemPlaceholder);
-
-                if (slots[i].amount > 1 && font.getInfo().family != "")
-                {
-                    amountText.setString(to_string(slots[i].amount));
-                    amountText.setPosition({pos.x + slotSize - 16.f, pos.y + slotSize - 18.f});
-                    window.draw(amountText);
-                }
+                drawItem(slots[i], pos, slotSize);
             }
 
             if (i == selectedSlot)
@@ -249,65 +331,50 @@ void Inventory::draw(sf::RenderWindow& window)
         }
     }
 
-    // 2. Rysowanie pełnego ekwipunku po naciśnięciu 'I'
     if (isOpen)
     {
-        sf::Vector2f invPos(center.x + (size.x / 2.f) - 260.f, center.y - (size.y / 2.f) + 20.f);
+        sf::Vector2f invPos = computeInventoryPosition(currentView, inventorySprite);
 
         inventorySprite.setPosition(invPos);
         window.draw(inventorySprite);
 
+        const float slotWidth = SLOT_TEX_SIZE * UI_SCALE;
+
         for (size_t i = 0; i < slots.size(); i++)
         {
-            if (i == static_cast<size_t>(draggedSlotIndex)) continue;
+            if (static_cast<int>(i) == draggedSlotIndex) continue;
 
             if (slots[i].itemID != 0)
             {
-                sf::Vector2f slotPos = getSlotPosition(i, invPos);
-
-                // Mniejszy rozmiar dla paska hotbar, większy dla pozostałych kratek
-                if (i < 5)
-                {
-                    itemPlaceholder.setSize({20.f, 20.f});
-                    itemPlaceholder.setPosition({slotPos.x + 3.f, slotPos.y + 3.f});
-                }
-                else
-                {
-                    itemPlaceholder.setSize({28.f, 28.f});
-                    itemPlaceholder.setPosition({slotPos.x + 3.f, slotPos.y + 3.f});
-                }
-
-                itemPlaceholder.setTexture(nullptr);
-                itemPlaceholder.setFillColor(sf::Color::White);
-
-                if (slots[i].itemID == 1) itemPlaceholder.setTexture(&cakeTexture);
-                else if (slots[i].itemID == 3) itemPlaceholder.setTexture(&swordTexture);
-                else itemPlaceholder.setFillColor(sf::Color::Yellow);
-
-                window.draw(itemPlaceholder);
-
-                if (slots[i].amount > 1 && font.getInfo().family != "")
-                {
-                    amountText.setString(to_string(slots[i].amount));
-                    amountText.setPosition({slotPos.x + 14.f, slotPos.y + 14.f});
-                    window.draw(amountText);
-                }
+                sf::Vector2f slotPos = getSlotPosition(static_cast<int>(i), invPos);
+                drawItem(slots[i], slotPos, slotWidth);
             }
         }
 
-        // 3. Rysowanie podniesionego przedmiotu przy kursorze myszy
+        if constexpr (DEBUG_SLOTS)
+        {
+            for (size_t i = 0; i < slots.size(); i++)
+            {
+                sf::RectangleShape dbg({slotWidth, slotWidth});
+                dbg.setPosition(getSlotPosition(static_cast<int>(i), invPos));
+                dbg.setFillColor(sf::Color::Transparent);
+                dbg.setOutlineColor(sf::Color::Red);
+                dbg.setOutlineThickness(1.f);
+                window.draw(dbg);
+            }
+        }
+
         if (draggedSlotIndex != -1)
         {
             sf::Vector2i mousePixel = sf::Mouse::getPosition(window);
-            sf::Vector2f mousePos = window.mapPixelToCoords(mousePixel, window.getDefaultView());
+            sf::Vector2f mousePos = window.mapPixelToCoords(mousePixel, currentView);
 
-            sf::RectangleShape draggedShape({24.f, 24.f});
-            draggedShape.setOrigin({12.f, 12.f});
+            float draggedSize = slotWidth * 0.75f;
+            sf::RectangleShape draggedShape({draggedSize, draggedSize});
+            draggedShape.setOrigin({draggedSize / 2.f, draggedSize / 2.f});
             draggedShape.setPosition(mousePos);
 
-            if (slots[draggedSlotIndex].itemID == 1) draggedShape.setTexture(&cakeTexture);
-            else if (slots[draggedSlotIndex].itemID == 3) draggedShape.setTexture(&swordTexture);
-            else draggedShape.setFillColor(sf::Color::Yellow);
+            applyItemTexture(draggedShape, slots[draggedSlotIndex].itemID);
 
             window.draw(draggedShape);
         }

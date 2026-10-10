@@ -42,14 +42,18 @@ int main()
         cout << "Nie udalo sie wczytac tekstur dekoracji" << endl;
     }
     
-    float groundY = 198.f;
-
     std::vector<Decoration> decorations;
-    decorations.emplace_back(decorTexture, DecorationType::treeLarge, sf::Vector2f(100.f, groundY));
-    decorations.emplace_back(decorTexture, DecorationType::singpost, sf::Vector2f(270.f, groundY));
-    decorations.emplace_back(decorTexture, DecorationType::barrel, sf::Vector2f(400.f, groundY));
-    decorations.emplace_back(decorTexture, DecorationType::crate, sf::Vector2f(430.f, groundY));
-    decorations.emplace_back(decorTexture, DecorationType::treeMedium, sf::Vector2f(480.f, groundY));
+
+    auto addDecor = [&](DecorationType type, float x)
+    {
+        decorations.emplace_back(decorTexture, type, sf::Vector2f(x, myMap.getSurfaceY(x)));
+    };
+
+    addDecor(DecorationType::treeLarge,  84.f);
+    addDecor(DecorationType::singpost,   238.f);
+    addDecor(DecorationType::barrel,     400.f);
+    addDecor(DecorationType::crate,      430.f);
+    addDecor(DecorationType::treeMedium, 496.f);
 
     while (window.isOpen())
     {

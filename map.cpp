@@ -9,13 +9,11 @@
 
 using namespace std;
 
-// Konstruktor do inicjalizacji obiektów spritów
 map::map() : skysprite(sky), tileSprite(tilesetTexture)
 {
 
 }
 
-// Wczytywanie tekstur nieba i terenu oraz obsługa mapy z pliku txt (jako fallback)
 void map::loadMap()
 {
     if (!sky.loadFromFile("assets/world/sky.png"))
@@ -51,35 +49,32 @@ void map::loadMap()
     }
 }
 
-// Mapowanie tekstur 
 sf::IntRect map::getTileRect(int tileType)
 {
     switch (tileType)
     {
-        case 1:  return sf::IntRect({16, 0}, {16, 16});  // Trawa góra (środek)
-        case 2:  return sf::IntRect({16, 16}, {16, 16}); // Ziemia (środek)
-        case 3:  return sf::IntRect({0, 16}, {16, 16});  // Trawa LEWA ściana
-        case 4:  return sf::IntRect({32, 16}, {16, 16}); // Trawa PRAWA ściana
-        case 5:  return sf::IntRect({0, 0}, {16, 16});   // Trawa góra LEWY róg
-        case 6:  return sf::IntRect({32, 0}, {16, 16});  // Trawa góra PRAWY róg
+        case 1:  return sf::IntRect({16, 0}, {16, 16});
+        case 2:  return sf::IntRect({16, 16}, {16, 16});
+        case 3:  return sf::IntRect({0, 16}, {16, 16});
+        case 4:  return sf::IntRect({32, 16}, {16, 16});
+        case 5:  return sf::IntRect({0, 0}, {16, 16});
+        case 6:  return sf::IntRect({32, 0}, {16, 16});
 
-        case 7:  return sf::IntRect({64, 0}, {16, 16});  // Pień dębowy
+        case 7:  return sf::IntRect({64, 0}, {16, 16});
 
-        case 10: return sf::IntRect({0, 32}, {16, 16});  // Ametyst
-        case 11: return sf::IntRect({16, 32}, {16, 16}); // Węgiel
-        case 12: return sf::IntRect({32, 32}, {16, 16}); // Diament
+        case 10: return sf::IntRect({0, 32}, {16, 16});
+        case 11: return sf::IntRect({16, 32}, {16, 16});
+        case 12: return sf::IntRect({32, 32}, {16, 16});
 
-        case 8:  return sf::IntRect({0, 48}, {16, 16});  // Ruda Żelaza
-        case 9:  return sf::IntRect({16, 48}, {16, 16}); // Główny Ciemny Kamień
+        case 8:  return sf::IntRect({0, 48}, {16, 16});
+        case 9:  return sf::IntRect({16, 48}, {16, 16});
 
-        default: return sf::IntRect({0, 0}, {0, 0});     // Powietrze / brak
+        default: return sf::IntRect({0, 0}, {0, 0});
     }
 }
 
-// Rysowanie nieba, terenu oraz podniesionych przedmiotów
 void map::draw(sf::RenderWindow& window)
 {
-    // 1. Dynamiczne dopasowanie wielkości tła nieba do pełnego obszaru wygenerowanej mapy
     sf::Vector2f mapSize = getMapSize();
     if (mapSize.x > 0 && mapSize.y > 0)
     {
@@ -87,14 +82,13 @@ void map::draw(sf::RenderWindow& window)
     }
     window.draw(skysprite);
 
-    // 2. Rysowanie kafelków mapy
     for (size_t y = 0; y < mapData.size(); y++)
     {
         for (size_t x = 0; x < mapData[y].size(); x++)
         {
             int tileType = mapData[y][x];
 
-            if (tileType == 0) continue; // Powietrze
+            if (tileType == 0) continue;
 
             tileSprite.setPosition({x * tileSize, y * tileSize + mapOffsetY});
             tileSprite.setTextureRect(getTileRect(tileType));
@@ -103,14 +97,12 @@ void map::draw(sf::RenderWindow& window)
         }
     }
 
-    // 3. Rysowanie klocków leżących na ziemi
     for (const auto& drop : droppedItems)
     {
         window.draw(drop.item);
     }
 }
 
-// Sprawdzanie kolizji punktu na mapie
 bool map::isSolid(float x, float y)
 {
     int tileX = static_cast<int>(x / tileSize); 
@@ -129,14 +121,12 @@ bool map::isSolid(float x, float y)
     return mapData[tileY][tileX] != 0;
 }
 
-// Zwraca pozycję Y podłogi
 float map::getGroundY(float x, float y)
 {
     int tileY = static_cast<int>((y - mapOffsetY) / tileSize);
     return tileY * tileSize + mapOffsetY;
 }
 
-// Zwraca pozycję pierwszego stałego bloku
 float map::getSurfaceY(float worldX)
 {
     int tileX = static_cast<int>(worldX / tileSize);
@@ -154,7 +144,6 @@ float map::getSurfaceY(float worldX)
     return 0.f;
 }
 
-// Zwraca pełne wymiary mapy w pikselach
 sf::Vector2f map::getMapSize()
 {
     if (mapData.empty()) return {0.f, 0.f};
@@ -165,7 +154,6 @@ sf::Vector2f map::getMapSize()
     return {width, height};
 }
 
-// Niszczenie kafelka i tworzenie dropu przedmiotu
 bool map::destroyTile(float worldX, float worldY)
 {
     int tileX = static_cast<int>(worldX / tileSize);
@@ -177,7 +165,14 @@ bool map::destroyTile(float worldX, float worldY)
         {
             if (mapData[tileY][tileX] != 0)
             {
-                int itemID = mapData[tileY][tileX];
+                int tileType = mapData[tileY][tileX];
+
+                if (tileType == 1 || tileType == 3 || tileType == 4 || tileType == 5 || tileType == 6)
+                {
+                    tileType = 2;
+                }
+
+                int itemID = 100 + tileType;
 
                 float dropX = tileX * tileSize + 4.f;
                 float dropY = tileY * tileSize + mapOffsetY + 4.f;
@@ -189,6 +184,8 @@ bool map::destroyTile(float worldX, float worldY)
                 newItem.item.setPosition(newItem.position);
                 newItem.item.setSize({8.f, 8.f});
                 newItem.item.setFillColor(sf::Color::White);
+                newItem.item.setTexture(&tilesetTexture);
+                newItem.item.setTextureRect(getTileRect(tileType));
 
                 droppedItems.push_back(newItem);
 
@@ -200,7 +197,6 @@ bool map::destroyTile(float worldX, float worldY)
     return false;
 }
 
-// Podnoszenie przedmiotów z ziemi do ekwipunku
 void map::checkItemPickup(sf::Vector2f playerPos, Inventory& inventory)
 {
     float pickUpRange = 25.f;
@@ -226,13 +222,11 @@ void map::generateMap(int width, int height, int seed)
 {
     mapData = std::vector<std::vector<int>>(height, std::vector<int>(width, 0));
 
-    // Szum powierzchni
     FastNoiseLite surfaceNoise;
     surfaceNoise.SetSeed(seed);
     surfaceNoise.SetNoiseType(FastNoiseLite::NoiseType_Perlin);
     surfaceNoise.SetFrequency(0.015f);
 
-    // Szum podziemi 
     FastNoiseLite caveNoise;
     caveNoise.SetSeed(seed + 1);
     caveNoise.SetNoiseType(FastNoiseLite::NoiseType_OpenSimplex2);
@@ -260,14 +254,13 @@ void map::generateMap(int width, int height, int seed)
             {
                 int randVal = rand() % 100;
 
-                if (randVal < 4)       mapData[y][x] = 11; // Węgiel (4% szans)
-                else if (randVal < 8)  mapData[y][x] = 8;  // Ruda Żelaza (4% szans)
-                else if (randVal < 10) mapData[y][x] = 10; // Ametyst (2% szans)
-                else if (randVal < 11 && y > surfaceY + 25) mapData[y][x] = 12; // Diament głęboko (1% szans)
-                else                   mapData[y][x] = 9;  // Główny Kamień (ID 9)
+                if (randVal < 4)       mapData[y][x] = 11;
+                else if (randVal < 8)  mapData[y][x] = 8;
+                else if (randVal < 10) mapData[y][x] = 10;
+                else if (randVal < 11 && y > surfaceY + 25) mapData[y][x] = 12;
+                else                   mapData[y][x] = 9;
             }
 
-            // Drążenie jaskiń
             if (y > surfaceY + 5)
             {
                 float caveVal = caveNoise.GetNoise(static_cast<float>(x), static_cast<float>(y));
