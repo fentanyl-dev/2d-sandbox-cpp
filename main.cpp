@@ -11,25 +11,74 @@
 
 using namespace std;
 
-void drawBar(sf::RenderWindow& window, sf::Vector2f pos, sf::Vector2f size, float ratio, sf::Color color)
+void drawHUD(sf::RenderWindow& window, const stats& playerStats, 
+             const sf::Texture& hFull, const sf::Texture& hHalf, const sf::Texture& hEmpty,
+             const sf::Texture& eFull, const sf::Texture& eHalf, const sf::Texture& eEmpty)
 {
-    sf::RectangleShape back(size);
-    back.setPosition(pos);
-    back.setFillColor(sf::Color(20, 18, 24, 200));
-    back.setOutlineColor(sf::Color(60, 55, 70));
-    back.setOutlineThickness(2.f);
-    window.draw(back);
+    sf::Sprite icon(hFull);
+    icon.setScale({2.0f, 2.0f});
 
-    sf::RectangleShape fill({size.x * ratio, size.y});
-    fill.setPosition(pos);
-    fill.setFillColor(color);
-    window.draw(fill);
+    float startX = 20.f;
+    float startY = 20.f;
+    float iconSpacing = 25.f;
+
+    // ZYCIE
+    int totalHearts = 10;
+    float hpPerHeart = playerStats.maxHealth / totalHearts;
+
+    for (int i = 0; i < totalHearts; i++)
+    {
+        float heartMin = i * hpPerHeart;
+        float heartMax = (i + 1) * hpPerHeart;
+
+        if (playerStats.health >= heartMax)
+        {
+            icon.setTexture(hFull);
+        } 
+        else if (playerStats.health <= heartMin)
+        {
+            icon.setTexture(hEmpty);
+        } 
+        else 
+        {
+            icon.setTexture(hHalf);
+        }
+        
+        icon.setPosition({startX + (i * iconSpacing), startY});
+        window.draw(icon);
+    }
+
+    // MANA
+    float energyStartY = startY + 30.f;
+    int totalEnergies = 10;
+    float energyPerIcon = playerStats.maxMana / totalEnergies;
+
+    for (int i = 0; i < totalEnergies; i++)
+    {
+        float energyMin = i * energyPerIcon;
+        float energyMax = (i + 1) * energyPerIcon;
+
+        if (playerStats.mana >= energyMax)
+        {
+            icon.setTexture(eFull);
+        } 
+        else if (playerStats.mana <= energyMin)
+        {
+            icon.setTexture(eEmpty);
+        } 
+        else 
+        {
+            icon.setTexture(eHalf);
+        }
+        
+        icon.setPosition({startX + (i * iconSpacing), energyStartY});
+        window.draw(icon);
+    }
 }
 
 int main() 
 {
     sf::RenderWindow window(sf::VideoMode({1920, 1080}), "RPG GAME");
-
     window.setFramerateLimit(60);
 
     sf::View gameView(sf::FloatRect({0.f, 0.f}, {480.f, 270.f}));
@@ -48,11 +97,30 @@ int main()
     cout << "Map height: " << myMap.getMapSize().y << endl;
 
     Inventory inventory;
-
     inventory.addItem(3, 1);
     inventory.addItem(1, 1);
 
     stats stats;
+
+    sf::Texture heartFullTex, heartHalfTex, heartEmptyTex;
+    sf::Texture energyFullTex, energyHalfTex, energyEmptyTex;
+
+    if (!heartFullTex.loadFromFile("assets/hud/heart_full.png") ||
+        !heartHalfTex.loadFromFile("assets/hud/heart_half.png") ||
+        !heartEmptyTex.loadFromFile("assets/hud/heart_empty.png") ||
+        !energyFullTex.loadFromFile("assets/hud/energy_full.png") ||
+        !energyHalfTex.loadFromFile("assets/hud/energy_half.png") ||
+        !energyEmptyTex.loadFromFile("assets/hud/energy_empty.png"))
+    {
+        cout << "Nie udalo sie wczytac tekstur HUD!" << endl;
+    }
+
+    heartFullTex.setSmooth(false);
+    heartHalfTex.setSmooth(false);
+    heartEmptyTex.setSmooth(false);
+    energyFullTex.setSmooth(false);
+    energyHalfTex.setSmooth(false);
+    energyEmptyTex.setSmooth(false);
 
     sf::Texture decorTexture;
     if (!decorTexture.loadFromFile("assets/decoration/WoodTileset.png"))
@@ -119,7 +187,6 @@ int main()
 
                     float maxReach = 64.f;
                     sf::Vector2f playerPos = Player.getPosition();
-
                     sf::Vector2f diff = worldPos - playerPos;
 
                     float distance = std::sqrt(diff.x * diff.x + diff.y * diff.y);
@@ -155,36 +222,18 @@ int main()
         myMap.checkItemPickup(Player.getPosition(), inventory);
         
         sf::Vector2f cameraPos = Player.getPosition();
-
         float halfWidth = gameView.getSize().x / 2.f;
         float halfHeight = gameView.getSize().y / 2.f;
-
         sf::Vector2f mapSize = myMap.getMapSize();
 
-        if (cameraPos.x < halfWidth)
-        {
-            cameraPos.x = halfWidth;
-        }
-
-        if (cameraPos.x > mapSize.x - halfWidth)
-        {
-            cameraPos.x = mapSize.x - halfWidth;
-        }
-
-        if (cameraPos.y < halfHeight)
-        {
-            cameraPos.y = halfHeight;
-        }
-
-        if (cameraPos.y > mapSize.y - halfHeight)
-        {
-            cameraPos.y = mapSize.y - halfHeight;
-        }
+        if (cameraPos.x < halfWidth) cameraPos.x = halfWidth;
+        if (cameraPos.x > mapSize.x - halfWidth) cameraPos.x = mapSize.x - halfWidth;
+        if (cameraPos.y < halfHeight) cameraPos.y = halfHeight;
+        if (cameraPos.y > mapSize.y - halfHeight) cameraPos.y = mapSize.y - halfHeight;
 
         gameView.setCenter(cameraPos);
 
         window.clear();
-
         window.setView(gameView);
 
         myMap.draw(window);
@@ -198,8 +247,8 @@ int main()
 
         window.setView(window.getDefaultView());
 
-        drawBar(window, {20.f, 20.f}, {300.f, 24.f}, stats.health / stats.maxHealth, sf::Color(200, 40, 40));
-        drawBar(window, {20.f, 52.f}, {300.f, 24.f}, stats.mana / stats.maxMana, sf::Color(50, 100, 220));
+        drawHUD(window, stats, heartFullTex, heartHalfTex, heartEmptyTex, 
+                energyFullTex, energyHalfTex, energyEmptyTex);
 
         inventory.draw(window);
 
