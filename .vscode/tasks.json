@@ -2,21 +2,30 @@
     "version": "2.0.0",
     "tasks": [
         {
-            "type": "cppbuild",
-            "label": "C/C++: clang++ build active file",
+            "type": "shell",
+            "label": "Build SFML Project",
             "command": "/usr/bin/clang++",
             "args": [
                 "-std=c++17",
-                "-fcolor-diagnostics",
-                "-fansi-escape-codes",
                 "-g",
-                "${workspaceFolder}/*.cpp",
+                "*.cpp",
                 "-o",
-                "${workspaceFolder}/main",
-                "-L/usr/local/lib",
+                "main",
+                "-fPIC",
+                "-I/opt/homebrew/Cellar/sfml/3.0.2/include",
+                "-L/opt/homebrew/Cellar/sfml/3.0.2/lib",
                 "-lsfml-graphics",
                 "-lsfml-window",
-                "-lsfml-system"
+                "-lsfml-system",
+                "-lsfml-audio",
+                "-framework",
+                "CoreFoundation",
+                "-framework",
+                "AppKit",
+                "-framework",
+                "IOKit",
+                "-framework",
+                "OpenGL"
             ],
             "options": {
                 "cwd": "${workspaceFolder}"
@@ -27,8 +36,7 @@
             "group": {
                 "kind": "build",
                 "isDefault": true
-            },
-            "detail": "compiler: /usr/bin/clang++"
+            }
         }
     ]
 }

@@ -30,6 +30,8 @@ class player
         player(map* worldMap);
         sf::Vector2f getPosition();
 
+        sf::FloatRect getAttackBounds() const;
+
         void move();
         void draw(sf::RenderWindow& window);
         void jump();

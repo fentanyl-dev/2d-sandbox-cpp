@@ -2,6 +2,10 @@
 #include <iostream>
 #include <string>
 
+#include "item.h"
+#include "ui_common.h"
+#include <algorithm>
+
 using namespace std;
 
 namespace
@@ -20,6 +24,8 @@ namespace
     constexpr float SIDE_Y   = 4.f;
     constexpr float EXTRA_Y  = 83.f;
 
+    constexpr int HOTBAR_COUNT = 4;
+
     constexpr bool DEBUG_SLOTS = false;
 
     sf::Vector2f computeInventoryPosition(const sf::View& view, const sf::Sprite& sprite)
@@ -32,40 +38,14 @@ namespace
                  center.y - (size.y / 2.f) + 20.f };
     }
 
-    sf::Texture& terrainTexture()
+    int maxStackOf(int itemID)
     {
-        static sf::Texture texture;
-        static bool loaded = false;
-
-        if (!loaded)
-        {
-            loaded = true;
-            if (!texture.loadFromFile("assets/world/Terrain.png"))
-            {
-                cout << "Nie udalo sie wczytac Terrain.png dla inventory!" << endl;
-            }
-            texture.setSmooth(false);
-        }
-        return texture;
-    }
-
-    sf::IntRect getTileItemRect(int itemID)
-    {
-        switch (itemID - 100)
-        {
-            case 2:  return sf::IntRect({16, 16}, {16, 16});
-            case 7:  return sf::IntRect({64, 0}, {16, 16});
-            case 8:  return sf::IntRect({0, 48}, {16, 16});
-            case 9:  return sf::IntRect({16, 48}, {16, 16});
-            case 10: return sf::IntRect({0, 32}, {16, 16});
-            case 11: return sf::IntRect({16, 32}, {16, 16});
-            case 12: return sf::IntRect({32, 32}, {16, 16});
-            default: return sf::IntRect({0, 0}, {0, 0});
-        }
+        const ItemDef* def = ItemDatabase::get(itemID);
+        return def ? def->maxStack : 99;
     }
 }
 
-Inventory::Inventory() : inventorySprite(inventoryTexture), amountText(font)
+Inventory::Inventory() : inventorySprite(inventoryTexture)
 {
     slots.resize(25);
 
@@ -82,51 +62,33 @@ Inventory::Inventory() : inventorySprite(inventoryTexture), amountText(font)
         inventorySprite.setOrigin({0.f, 0.f});
     }
 
-    if (!font.openFromFile("assets/arial.ttf"))
+    if (!font.openFromFile("assets/font/ARIAL.TTF"))
     {
-        cout << "Brak pliku czcionki assets/arial.ttf" << endl;
+        cout << "Brak pliku czcionki assets/font/ARIAL.TTF" << endl;
     }
     else
     {
-        amountText.setFont(font);
-        amountText.setCharacterSize(12);
-        amountText.setFillColor(sf::Color::White);
-        amountText.setOutlineColor(sf::Color::Black);
-        amountText.setOutlineThickness(1.f);
+        fontLoaded = true;
     }
 
-    float slotSize = 42.f;
-    slotBox.setSize({slotSize, slotSize});
-    slotBox.setFillColor(sf::Color(35, 33, 42, 230));
-    slotBox.setOutlineColor(sf::Color(85, 80, 95));
-    slotBox.setOutlineThickness(2.f);
-
-    selectorBox.setSize({slotSize, slotSize});
+    selectorBox.setSize({ui::SLOT_SIZE, ui::SLOT_SIZE});
     selectorBox.setFillColor(sf::Color::Transparent);
     selectorBox.setOutlineColor(sf::Color::White);
     selectorBox.setOutlineThickness(2.5f);
 
-    float padding = 5.f;
-    float totalWidth = (4 * slotSize) + (3 * padding) + 12.f;
-    backgroundBar.setSize({totalWidth, slotSize + 12.f});
+    float totalWidth = (4 * ui::SLOT_SIZE) + (3 * ui::SLOT_PAD) + 12.f;
+    backgroundBar.setSize({totalWidth, ui::SLOT_SIZE + 12.f});
     backgroundBar.setFillColor(sf::Color(20, 18, 24, 200));
     backgroundBar.setOutlineColor(sf::Color(60, 55, 70));
     backgroundBar.setOutlineThickness(1.5f);
-
-    if (!swordTexture.loadFromFile("assets/items/sword.png"))
-    {
-        cout << "Nie mozna wczytac tekstury item - sword" << endl;
-    }
-    swordTexture.setSmooth(false);
-
-    if (!cakeTexture.loadFromFile("assets/items/cake.png"))
-    {
-        cout << "Nie mozna wczytac tekstury item - cake" << endl;
-    }
-    cakeTexture.setSmooth(false);
 }
 
-sf::Vector2f Inventory::getSlotPosition(int index, sf::Vector2f invPos)
+const sf::Font* Inventory::getFont() const
+{
+    return fontLoaded ? &font : nullptr;
+}
+
+sf::Vector2f Inventory::getSlotPosition(int index, sf::Vector2f invPos) const
 {
     const float s = UI_SCALE;
 
@@ -157,26 +119,99 @@ sf::Vector2f Inventory::getSlotPosition(int index, sf::Vector2f invPos)
     return { 0.f, 0.f };
 }
 
+int Inventory::slotIndexAt(sf::Vector2f mousePos, sf::Vector2f invPos) const
+{
+    const float slotSize = SLOT_TEX_SIZE * UI_SCALE;
+
+    for (int i = 0; i < static_cast<int>(slots.size()); i++)
+    {
+        sf::FloatRect bounds(getSlotPosition(i, invPos), {slotSize, slotSize});
+        if (bounds.contains(mousePos)) return i;
+    }
+    return -1;
+}
+
+int Inventory::fillRange(int itemID, int amount, int begin, int end)
+{
+    int maxStack = maxStackOf(itemID);
+
+    for (int i = begin; i < end && amount > 0; i++)
+    {
+        inventorySlot& s = slots[i];
+        if (s.itemID == itemID && s.amount < maxStack)
+        {
+            int add = std::min(maxStack - s.amount, amount);
+            s.amount += add;
+            amount -= add;
+        }
+    }
+
+    for (int i = begin; i < end && amount > 0; i++)
+    {
+        inventorySlot& s = slots[i];
+        if (s.itemID == 0)
+        {
+            int add = std::min(maxStack, amount);
+            s.itemID = itemID;
+            s.amount = add;
+            amount -= add;
+        }
+    }
+
+    return amount;
+}
+
+
+void Inventory::quickMove(int index)
+{
+    inventorySlot& from = slots[index];
+    if (from.itemID == 0) return;
+
+    int total = static_cast<int>(slots.size());
+    int begin = (index < HOTBAR_COUNT) ? HOTBAR_COUNT : 0;
+    int end   = (index < HOTBAR_COUNT) ? total : HOTBAR_COUNT;
+
+    int left = fillRange(from.itemID, from.amount, begin, end);
+    from.amount = left;
+    if (left == 0) from = inventorySlot{};
+}
+
+void Inventory::returnCursorItem()
+{
+    if (cursorItem.itemID == 0) return;
+
+    cursorItem.amount = fillRange(cursorItem.itemID, cursorItem.amount, 0, static_cast<int>(slots.size()));
+    if (cursorItem.amount == 0) cursorItem = inventorySlot{};
+}
+
 bool Inventory::addItem(int itemID, int amount)
+{
+    return fillRange(itemID, amount, 0, static_cast<int>(slots.size())) == 0;
+}
+
+int Inventory::countItem(int itemID) const
+{
+    int total = 0;
+    for (const auto& slot : slots)
+    {
+        if (slot.itemID == itemID) total += slot.amount;
+    }
+    return total;
+}
+
+void Inventory::removeItem(int itemID, int amount)
 {
     for (auto& slot : slots)
     {
-        if (slot.itemID == itemID)
-        {
-            slot.amount += amount;
-            return true;
-        }
+        if (slot.itemID != itemID) continue;
+
+        int take = std::min(slot.amount, amount);
+        slot.amount -= take;
+        amount -= take;
+
+        if (slot.amount == 0) slot.itemID = 0;
+        if (amount == 0) return;
     }
-    for (auto& slot : slots)
-    {
-        if (slot.itemID == 0)
-        {
-            slot.itemID = itemID;
-            slot.amount = amount;
-            return true;
-        }
-    }
-    return false;
 }
 
 inventorySlot Inventory::getSelectedItem() const
@@ -201,8 +236,8 @@ bool Inventory::useSelectedItem(int amount)
 
 void Inventory::toggle()
 {
+    if (isOpen) returnCursorItem();
     isOpen = !isOpen;
-    draggedSlotIndex = -1;
 }
 
 bool Inventory::getIsOpen() const
@@ -223,30 +258,87 @@ void Inventory::handleMouseClick(sf::Vector2f mousePos, sf::RenderWindow& window
     if (!isOpen) return;
 
     sf::Vector2f invPos = computeInventoryPosition(window.getView(), inventorySprite);
-    const float slotSize = SLOT_TEX_SIZE * UI_SCALE;
+    int idx = slotIndexAt(mousePos, invPos);
+    if (idx == -1) return;
 
-    for (size_t i = 0; i < slots.size(); i++)
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::LShift))
     {
-        sf::Vector2f pos = getSlotPosition(static_cast<int>(i), invPos);
-        sf::FloatRect slotBounds(pos, {slotSize, slotSize});
+        if (cursorItem.itemID == 0) quickMove(idx);
+        return;
+    }
 
-        if (slotBounds.contains(mousePos))
+    inventorySlot& slot = slots[idx];
+
+    if (cursorItem.itemID == 0)
+    {
+        // podnies caly stack
+        if (slot.itemID != 0)
         {
-            if (draggedSlotIndex == -1)
-            {
-                if (slots[i].itemID != 0)
-                {
-                    draggedSlotIndex = static_cast<int>(i);
-                }
-            }
-            else
-            {
-                std::swap(slots[draggedSlotIndex], slots[i]);
-                draggedSlotIndex = -1;
-            }
-            break;
+            cursorItem = slot;
+            slot = inventorySlot{};
         }
     }
+    else if (slot.itemID == 0)
+    {
+        slot = cursorItem;
+        cursorItem = inventorySlot{};
+    }
+    else if (slot.itemID == cursorItem.itemID)
+    {
+        int room = maxStackOf(slot.itemID) - slot.amount;
+        int add = std::min(room, cursorItem.amount);
+        if (add > 0)
+        {
+            slot.amount += add;
+            cursorItem.amount -= add;
+            if (cursorItem.amount == 0) cursorItem = inventorySlot{};
+        }
+    }
+    else
+    {
+        std::swap(slot, cursorItem);
+    }
+}
+
+void Inventory::handleRightClick(sf::Vector2f mousePos, sf::RenderWindow& window)
+{
+    if (!isOpen) return;
+
+    sf::Vector2f invPos = computeInventoryPosition(window.getView(), inventorySprite);
+    int idx = slotIndexAt(mousePos, invPos);
+    if (idx == -1) return;
+
+    inventorySlot& slot = slots[idx];
+
+    if (cursorItem.itemID == 0)
+    {
+        if (slot.itemID == 0) return;
+
+        int take = (slot.amount + 1) / 2;
+        cursorItem.itemID = slot.itemID;
+        cursorItem.amount = take;
+
+        slot.amount -= take;
+        if (slot.amount == 0) slot = inventorySlot{};
+        return;
+    }
+
+    if (slot.itemID == 0)
+    {
+        slot.itemID = cursorItem.itemID;
+        slot.amount = 1;
+    }
+    else if (slot.itemID == cursorItem.itemID && slot.amount < maxStackOf(slot.itemID))
+    {
+        slot.amount++;
+    }
+    else
+    {
+        return;
+    }
+
+    cursorItem.amount--;
+    if (cursorItem.amount == 0) cursorItem = inventorySlot{};
 }
 
 void Inventory::draw(sf::RenderWindow& window)
@@ -254,56 +346,12 @@ void Inventory::draw(sf::RenderWindow& window)
     sf::View currentView = window.getView();
     sf::Vector2f center = currentView.getCenter();
     sf::Vector2f size = currentView.getSize();
-
-    sf::RectangleShape itemShape;
-
-    auto applyItemTexture = [&](sf::RectangleShape& shape, int itemID)
-    {
-        if (itemID == 1)
-        {
-            shape.setTexture(&cakeTexture, true);
-        }
-        else if (itemID == 3)
-        {
-            shape.setTexture(&swordTexture, true);
-        }
-        else if (itemID >= 100)
-        {
-            shape.setTexture(&terrainTexture());
-            shape.setTextureRect(getTileItemRect(itemID));
-        }
-        else
-        {
-            shape.setFillColor(sf::Color::Yellow);
-        }
-    };
-
-    auto drawItem = [&](const inventorySlot& slot, sf::Vector2f slotPos, float slotWidth)
-    {
-        float itemSize = slotWidth * 0.75f;
-        float offset = (slotWidth - itemSize) / 2.f;
-
-        itemShape.setSize({itemSize, itemSize});
-        itemShape.setPosition({slotPos.x + offset, slotPos.y + offset});
-        itemShape.setTexture(nullptr);
-        itemShape.setFillColor(sf::Color::White);
-
-        applyItemTexture(itemShape, slot.itemID);
-
-        window.draw(itemShape);
-
-        if (slot.amount > 1 && font.getInfo().family != "")
-        {
-            amountText.setString(to_string(slot.amount));
-            amountText.setPosition({slotPos.x + slotWidth - 16.f, slotPos.y + slotWidth - 18.f});
-            window.draw(amountText);
-        }
-    };
+    const sf::Font* f = getFont();
 
     if (!isOpen)
     {
-        float slotSize = 42.f;
-        float padding = 5.f;
+        float slotSize = ui::SLOT_SIZE;
+        float padding = ui::SLOT_PAD;
         float totalSlotsWidth = (4 * slotSize) + (3 * padding);
         float startX = center.x - (totalSlotsWidth / 2.f);
         float startY = center.y + (size.y / 2.f) - slotSize - 18.f;
@@ -311,16 +359,16 @@ void Inventory::draw(sf::RenderWindow& window)
         backgroundBar.setPosition({startX - 6.f, startY - 6.f});
         window.draw(backgroundBar);
 
-        for (int i = 0; i < 4; i++)
+        for (int i = 0; i < HOTBAR_COUNT; i++)
         {
             sf::Vector2f pos(startX + i * (slotSize + padding), startY);
 
-            slotBox.setPosition(pos);
-            window.draw(slotBox);
+            ui::drawSlot(window, pos, slotSize);
 
-            if (slots[i].itemID != 0 && i != draggedSlotIndex)
+            if (slots[i].itemID != 0)
             {
-                drawItem(slots[i], pos, slotSize);
+                ui::drawItemIcon(window, slots[i].itemID, pos, slotSize);
+                ui::drawAmount(window, f, slots[i].amount, pos, slotSize);
             }
 
             if (i == selectedSlot)
@@ -340,15 +388,22 @@ void Inventory::draw(sf::RenderWindow& window)
 
         const float slotWidth = SLOT_TEX_SIZE * UI_SCALE;
 
+        sf::Vector2f mousePos = window.mapPixelToCoords(sf::Mouse::getPosition(window), currentView);
+        int hovered = slotIndexAt(mousePos, invPos);
+
         for (size_t i = 0; i < slots.size(); i++)
         {
-            if (static_cast<int>(i) == draggedSlotIndex) continue;
-
             if (slots[i].itemID != 0)
             {
                 sf::Vector2f slotPos = getSlotPosition(static_cast<int>(i), invPos);
-                drawItem(slots[i], slotPos, slotWidth);
+                ui::drawItemIcon(window, slots[i].itemID, slotPos, slotWidth);
+                ui::drawAmount(window, f, slots[i].amount, slotPos, slotWidth);
             }
+        }
+
+        if (hovered != -1)
+        {
+            ui::drawHover(window, getSlotPosition(hovered, invPos), slotWidth);
         }
 
         if constexpr (DEBUG_SLOTS)
@@ -364,19 +419,20 @@ void Inventory::draw(sf::RenderWindow& window)
             }
         }
 
-        if (draggedSlotIndex != -1)
+        if (hovered != -1 && cursorItem.itemID == 0 && slots[hovered].itemID != 0)
         {
-            sf::Vector2i mousePixel = sf::Mouse::getPosition(window);
-            sf::Vector2f mousePos = window.mapPixelToCoords(mousePixel, currentView);
+            const ItemDef* def = ItemDatabase::get(slots[hovered].itemID);
+            if (def)
+            {
+                ui::drawTooltip(window, f, def->name, mousePos);
+            }
+        }
 
-            float draggedSize = slotWidth * 0.75f;
-            sf::RectangleShape draggedShape({draggedSize, draggedSize});
-            draggedShape.setOrigin({draggedSize / 2.f, draggedSize / 2.f});
-            draggedShape.setPosition(mousePos);
-
-            applyItemTexture(draggedShape, slots[draggedSlotIndex].itemID);
-
-            window.draw(draggedShape);
+        if (cursorItem.itemID != 0)
+        {
+            sf::Vector2f topLeft = mousePos - sf::Vector2f(slotWidth / 2.f, slotWidth / 2.f);
+            ui::drawItemIcon(window, cursorItem.itemID, topLeft, slotWidth);
+            ui::drawAmount(window, f, cursorItem.amount, topLeft, slotWidth);
         }
     }
 }

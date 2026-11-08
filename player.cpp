@@ -247,3 +247,16 @@ void player::setPosition(sf::Vector2f newPos)
     hitbox.setPosition(newPos);
     updateSpritePosition();
 }
+
+sf::FloatRect player::getAttackBounds() const
+{
+    sf::Vector2f pos = hitbox.getPosition();
+    sf::Vector2f size = hitbox.getSize();
+
+    float attackWidth = 24.f;
+    float attackHeight = size.y;
+    float attackX = facingRight ? (pos.x + size.x) : (pos.x - attackWidth);
+    float attackY = pos.y;
+
+    return sf::FloatRect({attackX, attackY}, {attackWidth, attackHeight});
+}

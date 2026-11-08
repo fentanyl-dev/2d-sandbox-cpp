@@ -4,10 +4,14 @@
 #include "inventory.h"
 #include "decoration.h"
 #include "stats.h"
+#include "enemy.h"
+#include "item.h"
+#include "crafting.h"
 
 #include <vector>
 #include <iostream>
 #include <cmath>
+#include <cstdlib>
 
 using namespace std;
 
@@ -81,6 +85,8 @@ int main()
     sf::RenderWindow window(sf::VideoMode({1920, 1080}), "RPG GAME");
     window.setFramerateLimit(60);
 
+    ItemDatabase::innit();
+
     sf::View gameView(sf::FloatRect({0.f, 0.f}, {480.f, 270.f}));
 
     map myMap;
@@ -93,12 +99,25 @@ int main()
     float spawnY = myMap.getSurfaceY(spawnX);
     Player.setPosition({spawnX, spawnY - 32.f});
 
+    std::vector<Enemy> enemies;
+    sf::Clock spawnClock;
+    float spawnInterval = 4.0f; 
+    int maxEnemies = 10;
+
+    
+    float enemySpawnX = 260.f;
+    float enemySpawnY = myMap.getSurfaceY(enemySpawnX);
+    enemies.emplace_back(&myMap, sf::Vector2f(enemySpawnX, enemySpawnY - 16.f));
+
     cout << "Map width: " << myMap.getMapSize().x << endl;
     cout << "Map height: " << myMap.getMapSize().y << endl;
 
     Inventory inventory;
-    inventory.addItem(3, 1);
-    inventory.addItem(1, 1);
+    Crafting crafting;
+
+    inventory.addItem(obsidianSword, 1);
+    inventory.addItem(oak_plank, 6);
+    inventory.addItem(stone, 7);
 
     stats stats;
 
@@ -155,6 +174,22 @@ int main()
             Player.setPosition({spawnX, spawnY - 32.f});
         }
 
+        if (spawnClock.getElapsedTime().asSeconds() >= spawnInterval)
+        {
+            if (enemies.size() < (size_t)maxEnemies)
+            {
+                float randomOffsetX = (rand() % 2 == 0 ? 1.f : -1.f) * (250.f + (rand() % 300));
+                float newEnemyX = Player.getPosition().x + randomOffsetX;
+
+                if (newEnemyX > 50.f && newEnemyX < myMap.getMapSize().x - 50.f)
+                {
+                    float newEnemyY = myMap.getSurfaceY(newEnemyX);
+                    enemies.emplace_back(&myMap, sf::Vector2f(newEnemyX, newEnemyY - 16.f));
+                }
+            }
+            spawnClock.restart();
+        }
+
         while (const optional event = window.pollEvent())
         {
             if (event->is<sf::Event::Closed>())
@@ -172,28 +207,55 @@ int main()
                         sf::Vector2i mousePixelPos = sf::Mouse::getPosition(window);
                         sf::Vector2f guiMousePos = window.mapPixelToCoords(mousePixelPos, window.getDefaultView());
 
-                        inventory.handleMouseClick(guiMousePos, window);
+                        // najpierw panel craftingu, potem ekwipunek
+                        if (!crafting.handleClick(guiMousePos, window, inventory))
+                        {
+                            inventory.handleMouseClick(guiMousePos, window);
+                        }
                     }
                     else
                     {
                         Player.attack();
+                        sf::FloatRect attackArea = Player.getAttackBounds();
+
+                        for (auto& enemy : enemies)
+                        {
+                            if (!enemy.isDead())
+                            {
+                                if (attackArea.findIntersection(enemy.getBounds()).has_value())
+                                {
+                                    // Zadajemy obrażenia i przekazujemy pozycję gracza do odrzutu!
+                                    enemy.takeDamage(1.0f, Player.getPosition());
+                                }
+                            }
+                        }
                     }
                 }
 
                 if (mousePress->button == sf::Mouse::Button::Right)
                 {
-                    sf::Vector2i mousePixelPos = sf::Mouse::getPosition(window);
-                    sf::Vector2f worldPos = window.mapPixelToCoords(mousePixelPos, gameView);
-
-                    float maxReach = 64.f;
-                    sf::Vector2f playerPos = Player.getPosition();
-                    sf::Vector2f diff = worldPos - playerPos;
-
-                    float distance = std::sqrt(diff.x * diff.x + diff.y * diff.y);
-
-                    if (distance <= maxReach)
+                    if (inventory.getIsOpen())
                     {
-                        myMap.destroyTile(worldPos.x, worldPos.y);
+                        sf::Vector2i mousePixelPos = sf::Mouse::getPosition(window);
+                        sf::Vector2f guiMousePos = window.mapPixelToCoords(mousePixelPos, window.getDefaultView());
+
+                        inventory.handleRightClick(guiMousePos, window);
+                    }
+                    else
+                    {
+                        sf::Vector2i mousePixelPos = sf::Mouse::getPosition(window);
+                        sf::Vector2f worldPos = window.mapPixelToCoords(mousePixelPos, gameView);
+
+                        float maxReach = 64.f;
+                        sf::Vector2f playerPos = Player.getPosition();
+                        sf::Vector2f diff = worldPos - playerPos;
+
+                        float distance = std::sqrt(diff.x * diff.x + diff.y * diff.y);
+
+                        if (distance <= maxReach)
+                        {
+                            myMap.destroyTile(worldPos.x, worldPos.y);
+                        }
                     }
                 }
             }
@@ -219,6 +281,19 @@ int main()
         Player.jump();
         Player.gravity();
         
+        for (size_t i = 0; i < enemies.size(); )
+        {
+            if (!enemies[i].isDead())
+            {
+                enemies[i].update(Player.getPosition(), stats);
+                i++;
+            }
+            else
+            {
+                enemies.erase(enemies.begin() + i);
+            }
+        }
+
         myMap.checkItemPickup(Player.getPosition(), inventory);
         
         sf::Vector2f cameraPos = Player.getPosition();
@@ -242,7 +317,12 @@ int main()
         {
             decor.draw(window);
         }
-        
+
+        for (auto& enemy : enemies)
+        {
+            enemy.draw(window);
+        }
+
         Player.draw(window);
 
         window.setView(window.getDefaultView());
@@ -252,6 +332,13 @@ int main()
 
         inventory.draw(window);
 
+        if (inventory.getIsOpen())
+        {
+            crafting.draw(window, inventory);
+        }
+
         window.display();
     }
+
+    return 0;
 }

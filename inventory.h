@@ -19,20 +19,21 @@ private:
     sf::Texture inventoryTexture;
     sf::Sprite inventorySprite;
 
-    sf::Texture swordTexture;
-    sf::Texture cakeTexture;
-
     sf::Font font;
-    sf::Text amountText;
+    bool fontLoaded = false;
 
-    sf::RectangleShape backgroundBar; 
-    sf::RectangleShape slotBox;       
+    sf::RectangleShape backgroundBar;
     sf::RectangleShape selectorBox;
 
     int selectedSlot = 0;
     bool isOpen = false;
 
-    int draggedSlotIndex = -1;
+    inventorySlot cursorItem;  
+
+    int fillRange(int itemID, int amount, int begin, int end);
+    void quickMove(int index);
+    void returnCursorItem();
+    int slotIndexAt(sf::Vector2f mousePos, sf::Vector2f invPos) const;
 
 public:
     Inventory();
@@ -42,10 +43,16 @@ public:
     bool getIsOpen() const;
     void selectSlot(int index);
 
+    const sf::Font* getFont() const;
+
     bool addItem(int itemID, int amount = 1);
     bool useSelectedItem(int amount = 1);
     inventorySlot getSelectedItem() const;
 
-    sf::Vector2f getSlotPosition(int index, sf::Vector2f invPos);
+    sf::Vector2f getSlotPosition(int index, sf::Vector2f invPos) const;
     void handleMouseClick(sf::Vector2f mousePos, sf::RenderWindow& window);
+    void handleRightClick(sf::Vector2f mousePos, sf::RenderWindow& window);
+
+    int countItem(int itemID) const;
+    void removeItem(int itemID, int amount);
 };
