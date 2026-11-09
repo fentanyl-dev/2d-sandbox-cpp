@@ -7,6 +7,7 @@
 #include "enemy.h"
 #include "item.h"
 #include "crafting.h"
+#include "daynight.h"
 
 #include <vector>
 #include <iostream>
@@ -85,6 +86,7 @@ int main()
     sf::RenderWindow window(sf::VideoMode({1920, 1080}), "RPG GAME");
     window.setFramerateLimit(60);
 
+    {
     ItemDatabase::innit();
 
     sf::View gameView(sf::FloatRect({0.f, 0.f}, {480.f, 270.f}));
@@ -109,9 +111,6 @@ int main()
     float enemySpawnY = myMap.getSurfaceY(enemySpawnX);
     enemies.emplace_back(&myMap, sf::Vector2f(enemySpawnX, enemySpawnY - 16.f));
 
-    cout << "Map width: " << myMap.getMapSize().x << endl;
-    cout << "Map height: " << myMap.getMapSize().y << endl;
-
     Inventory inventory;
     Crafting crafting;
 
@@ -120,6 +119,8 @@ int main()
     inventory.addItem(stone, 7);
 
     stats stats;
+
+    DayNight dayNight;
 
     sf::Texture heartFullTex, heartHalfTex, heartEmptyTex;
     sf::Texture energyFullTex, energyHalfTex, energyEmptyTex;
@@ -162,10 +163,17 @@ int main()
 
     sf::Clock frameClock;
 
-    while (window.isOpen())
+    bool running = true;
+
+    while (running && window.isOpen())
     {
         float dt = frameClock.restart().asSeconds();
         stats.update(dt);
+        dayNight.update(dt);
+
+        // Spawn zalezny od pory dnia
+        spawnInterval = dayNight.isNight() ? 2.0f : 8.0f;
+        maxEnemies    = dayNight.isNight() ? 15   : 3;
 
         if (stats.isDead())
         {
@@ -194,7 +202,7 @@ int main()
         {
             if (event->is<sf::Event::Closed>())
             {
-                window.close();
+                running = false;
             }
             if (event->is<sf::Event::MouseButtonPressed>())
             {
@@ -224,7 +232,7 @@ int main()
                             {
                                 if (attackArea.findIntersection(enemy.getBounds()).has_value())
                                 {
-                                    // Zadajemy obrażenia i przekazujemy pozycję gracza do odrzutu!
+                                    // Zadajemy obrazenia i przekazujemy pozycje gracza do odrzutu!
                                     enemy.takeDamage(1.0f, Player.getPosition());
                                 }
                             }
@@ -270,12 +278,21 @@ int main()
                 if (keyPressed->code == sf::Keyboard::Key::H) stats.takeDamage(10.f);
                 if (keyPressed->code == sf::Keyboard::Key::M) stats.useMana(10.f);
 
+                // Test: przewijanie czasu o 0.1 doby
+                if (keyPressed->code == sf::Keyboard::Key::T)
+                {
+                    dayNight.setTime(dayNight.getTime() + 0.1f);
+                }
+
                 if (keyPressed->code == sf::Keyboard::Key::Num1) inventory.selectSlot(0);
                 if (keyPressed->code == sf::Keyboard::Key::Num2) inventory.selectSlot(1);
                 if (keyPressed->code == sf::Keyboard::Key::Num3) inventory.selectSlot(2);
                 if (keyPressed->code == sf::Keyboard::Key::Num4) inventory.selectSlot(3);
             }
         }
+
+        if (!running)
+            break;
 
         Player.move();
         Player.jump();
@@ -327,6 +344,8 @@ int main()
 
         window.setView(window.getDefaultView());
 
+        dayNight.draw(window);
+
         drawHUD(window, stats, heartFullTex, heartHalfTex, heartEmptyTex, 
                 energyFullTex, energyHalfTex, energyEmptyTex);
 
@@ -339,6 +358,14 @@ int main()
 
         window.display();
     }
+
+    enemies.clear();
+    decorations.clear();
+    Enemy::releaseTexture();
+    ItemDatabase::shutDown();
+    }
+
+    window.close();
 
     return 0;
 }

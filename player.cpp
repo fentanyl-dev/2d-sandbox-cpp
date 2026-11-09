@@ -114,19 +114,34 @@ void player::gravity()
 
     hitbox.move({0.f, velocityY});
 
-    float playerCenterX = hitbox.getPosition().x + hitbox.getSize().x / 2.f;
+    sf::Vector2f pos  = hitbox.getPosition();
+    sf::Vector2f size = hitbox.getSize();
 
-    float playerBottom = hitbox.getPosition().y + hitbox.getSize().y + 1;
-
-    if (velocityY > 0 &&
-        worldMap->isSolid(playerCenterX, playerBottom))
+    if (velocityY < 0.f)
     {
-        float groundY =
-            worldMap->getGroundY(playerCenterX, playerBottom);
+        float headY  = pos.y;
+        float leftX  = pos.x + 1.f;
+        float rightX = pos.x + size.x - 1.f;
+
+        if (worldMap->isSolid(leftX, headY) || worldMap->isSolid(rightX, headY))
+        {
+            float tileBottom = worldMap->getGroundY(pos.x + size.x / 2.f, headY) + 16.f;
+
+            hitbox.setPosition({pos.x, tileBottom});
+            velocityY = 0.f;
+        }
+    }
+
+    float playerCenterX = hitbox.getPosition().x + size.x / 2.f;
+    float playerBottom  = hitbox.getPosition().y + size.y + 1;
+
+    if (velocityY > 0 && worldMap->isSolid(playerCenterX, playerBottom))
+    {
+        float groundY = worldMap->getGroundY(playerCenterX, playerBottom);
 
         hitbox.setPosition({
             hitbox.getPosition().x,
-            groundY - hitbox.getSize().y
+            groundY - size.y
         });
 
         velocityY = 0.f;
@@ -134,7 +149,6 @@ void player::gravity()
     }
 
     updateSpritePosition();
-    
 }
 
 void player::updateSpritePosition()

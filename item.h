@@ -66,12 +66,13 @@ class ItemDatabase
     public: 
         static void innit();
         static const ItemDef* get(int id);
+        static void shutDown();
     private:
         static void addTextureItem(int id, const std::string& name, const std::string& path, int maxStack);
         static void addTileItem(int id, const std::string& name, sf::IntRect rect, int maxStack = 64);
 
         static std::unordered_map<int, ItemDef> items;
-        static std::unordered_map<int, sf::Texture> textures;
-        static sf::Texture terrain;
+        static std::unordered_map<int, sf::Texture*> textures;
+        static sf::Texture* terrain;
 
 };

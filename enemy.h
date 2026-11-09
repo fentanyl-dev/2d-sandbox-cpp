@@ -7,7 +7,8 @@ class Enemy
 {
 private:
     sf::RectangleShape hitbox;
-    static sf::Texture enemyTexture; 
+    static sf::Texture* enemyTexture;
+    static sf::Texture& getTexture();
     sf::Sprite enemySprite;
 
     sf::RectangleShape healthBarBackground;
@@ -59,4 +60,7 @@ public:
     }
     
     sf::FloatRect getBounds() const;
+
+    static void releaseTexture();
+    
 };

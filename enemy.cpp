@@ -4,31 +4,32 @@
 
 using namespace std;
 
-sf::Texture Enemy::enemyTexture;
+sf::Texture* Enemy::enemyTexture = nullptr;
 
-Enemy::Enemy(map* worldMap, sf::Vector2f startPos) : enemySprite(enemyTexture)
+sf::Texture& Enemy::getTexture()
 {
-    this->worldMap = worldMap;
-
-    if (enemyTexture.getSize().x == 0)
+    if (!enemyTexture)
     {
-        if (!enemyTexture.loadFromFile("assets/enemy/blob.png"))
+        enemyTexture = new sf::Texture();
+        if (!enemyTexture->loadFromFile("assets/enemy/blob.png"))
         {
             cout << "Nie udalo sie wczytac tekstury bloba! Uzywam koloru zastepczego." << endl;
-            textureLoaded = false;
         }
         else
         {
-            enemyTexture.setSmooth(false);
-            textureLoaded = true;
+            enemyTexture->setSmooth(false);
         }
     }
-    else
-    {
-        textureLoaded = true;
-    }
 
-    enemySprite.setTexture(enemyTexture, true);
+    return *enemyTexture;
+}
+
+Enemy::Enemy(map* worldMap, sf::Vector2f startPos) : enemySprite(getTexture())
+{
+    this->worldMap = worldMap;
+
+    textureLoaded = enemyTexture->getSize().x != 0;
+    enemySprite.setTexture(*enemyTexture, true);
     enemySprite.setOrigin({8.f, 8.f});
 
     hitbox.setSize({16.f, 16.f});
@@ -182,4 +183,10 @@ void Enemy::updateSpritePosition()
 sf::FloatRect Enemy::getBounds() const
 {
     return hitbox.getGlobalBounds();
+}
+
+void Enemy::releaseTexture()
+{
+    delete enemyTexture;
+    enemyTexture = nullptr;
 }

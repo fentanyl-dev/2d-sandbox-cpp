@@ -2,8 +2,8 @@
 #include <iostream>
 
 std::unordered_map<int, ItemDef> ItemDatabase::items;
-std::unordered_map<int, sf::Texture> ItemDatabase::textures;
-sf::Texture ItemDatabase::terrain;
+std::unordered_map<int, sf::Texture*> ItemDatabase::textures;
+sf::Texture* ItemDatabase::terrain = nullptr;
 
 void ItemDatabase::addTextureItem(int id, const std::string& name, const std::string& path, int maxStack)
 {
@@ -11,14 +11,16 @@ void ItemDatabase::addTextureItem(int id, const std::string& name, const std::st
     def.name = name;
     def.maxStack = maxStack;
 
-    sf::Texture& tex = textures[id];
-    if (tex.loadFromFile(path))
+    sf::Texture* tex = new sf::Texture();
+    if (tex->loadFromFile(path))
     {
-        tex.setSmooth(false);
-        def.texture = &tex;
+        tex->setSmooth(false);
+        def.texture = tex;
+        textures[id] = tex;
     }
     else 
     {
+        delete tex;
         std::cout << "Nie udalo sie wczytac tekstury itemu" << path << std::endl;
     }
     items[id] = def;
@@ -29,7 +31,7 @@ void ItemDatabase::addTileItem(int id, const std::string& name, sf::IntRect rect
     ItemDef def;
     def.name = name;
     def.maxStack = maxStack;
-    def.texture = &terrain;
+    def.texture = terrain;
     def.isTile = true;
     def.tileRect = rect;
     items[id] = def;
@@ -37,11 +39,12 @@ void ItemDatabase::addTileItem(int id, const std::string& name, sf::IntRect rect
 
 void ItemDatabase::innit()
 {
-    if (!terrain.loadFromFile("assets/world/Terrain.png"))
+    terrain = new sf::Texture();
+    if (!terrain->loadFromFile("assets/world/Terrain.png"))
     {
         std::cout << "Nie udalo sie wczytac pliku z teksturami Terenu" << std::endl;
     }
-    terrain.setSmooth(false);
+    terrain->setSmooth(false);
 
     addTextureItem(stoneShovel, "Kamienna Lopata", "assets/items/stone_shovel.png", 1);
     addTextureItem(stonePickaxe, "Kamienny Kilof", "assets/items/stone_pickaxe.png", 1);
@@ -52,10 +55,10 @@ void ItemDatabase::innit()
     addTextureItem(diamond, "Diament", "assets/items/diamond.png", 64);
 
     addTextureItem(ametystSword, "Ametystowy Miecz", "assets/items/sword_amethyst.png", 1);
-    addTextureItem(ametyst_ignot, "Sztabka Ametystu", "assets/items/amethyst_ignot.png", 64);
+    addTextureItem(ametyst_ignot, "Sztabka Ametystu", "assets/items/amethyst_ingot.png", 64);
 
     addTextureItem(ironSword, "Zelazny miecz", "assets/items/sword_iron.png", 1);
-    addTextureItem(iron_clod, "Ruda zelaza", "assetes/items/iron_clod.png", 64);
+    addTextureItem(iron_clod, "Ruda zelaza", "assets/items/iron_clod.png", 64);
     addTextureItem(iron_ingot, "Szatbka zelaza", "assets/items/iron_ingot.png", 64);
 
     addTextureItem(obsidianSword, "Obsydianowy Miecz", "assets/items/sword_obsidian.png", 1);
@@ -84,4 +87,16 @@ const ItemDef* ItemDatabase::get(int id)
 {
     auto it = items.find(id);
     return it != items.end() ? &it->second : nullptr;
+}
+
+void ItemDatabase::shutDown()
+{
+    items.clear();
+
+    for (auto& entry : textures)
+        delete entry.second;
+    textures.clear();
+
+    delete terrain;
+    terrain = nullptr;
 }
