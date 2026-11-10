@@ -41,4 +41,6 @@ class player
         void animateIdle();
         void animateAttack();
         void attack();
+        
+        sf::FloatRect getBounds() const;
 };

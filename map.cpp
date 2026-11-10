@@ -294,3 +294,26 @@ void map::generateMap(int width, int height, int seed)
         }
     }
 }
+
+int map::getTile(float worldX, float worldY)
+{
+    int tileX = static_cast<int>(worldX / tileSize);
+    int tileY = static_cast<int>((worldY - mapOffsetY) / tileSize);
+
+    if (tileY < 0 || tileY >= static_cast<int>(mapData.size())) return 0;
+    if (tileX < 0 || tileX >= static_cast<int>(mapData[tileY].size())) return 0;
+    return mapData[tileY][tileX];
+}
+
+bool map::placeTile(float worldX, float worldY, int tileType)
+{
+    int tileX = static_cast<int>(worldX / tileSize);
+    int tileY = static_cast<int>((worldY - mapOffsetY) / tileSize);
+
+    if (tileY < 0 || tileY >= static_cast<int>(mapData.size())) return false;
+    if (tileX < 0 || tileX >= static_cast<int>(mapData[tileY].size())) return false;
+    if (mapData[tileY][tileX] != 0) return false;
+
+    mapData[tileY][tileX] = tileType;
+    return true;
+}

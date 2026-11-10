@@ -57,4 +57,8 @@ public:
     bool destroyTile(float worldX, float worldY);
 
     void checkItemPickup(sf::Vector2f playerPos, Inventory& inventory);
+
+    bool placeTile(float worldX, float worldY, int tileType);
+
+    int getTile(float worldX, float worldY);
 };

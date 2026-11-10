@@ -274,3 +274,8 @@ sf::FloatRect player::getAttackBounds() const
 
     return sf::FloatRect({attackX, attackY}, {attackWidth, attackHeight});
 }
+
+sf::FloatRect player::getBounds() const
+{
+    return hitbox.getGlobalBounds();
+}

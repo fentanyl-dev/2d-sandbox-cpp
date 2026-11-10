@@ -81,6 +81,20 @@ void drawHUD(sf::RenderWindow& window, const stats& playerStats,
     }
 }
 
+// Jakiej sily kilofa wymaga dany kafel (0 = mozna golymi rekami)
+int requiredPower(int tile)
+{
+    switch (tile)
+    {
+        case 9:  return 1;   // kamien
+        case 8:
+        case 10:
+        case 11: return 2;   // rudy
+        case 12: return 3;   // gleboka ruda
+        default: return 0;   // ziemia, trawa
+    }
+}
+
 int main() 
 {
     sf::RenderWindow window(sf::VideoMode({1920, 1080}), "RPG GAME");
@@ -226,6 +240,10 @@ int main()
                         Player.attack();
                         sf::FloatRect attackArea = Player.getAttackBounds();
 
+                        // Obrazenia zaleza od trzymanego przedmiotu
+                        const ItemDef* held = ItemDatabase::get(inventory.getSelectedItem().itemID);
+                        float dmg = (held && held->type == ItemType::Weapon) ? held->power : 1.f;
+
                         for (auto& enemy : enemies)
                         {
                             if (!enemy.isDead())
@@ -233,7 +251,7 @@ int main()
                                 if (attackArea.findIntersection(enemy.getBounds()).has_value())
                                 {
                                     // Zadajemy obrazenia i przekazujemy pozycje gracza do odrzutu!
-                                    enemy.takeDamage(1.0f, Player.getPosition());
+                                    enemy.takeDamage(dmg, Player.getPosition());
                                 }
                             }
                         }
@@ -254,15 +272,54 @@ int main()
                         sf::Vector2i mousePixelPos = sf::Mouse::getPosition(window);
                         sf::Vector2f worldPos = window.mapPixelToCoords(mousePixelPos, gameView);
 
-                        float maxReach = 64.f;
-                        sf::Vector2f playerPos = Player.getPosition();
-                        sf::Vector2f diff = worldPos - playerPos;
+                        inventorySlot sel = inventory.getSelectedItem();
+                        const ItemDef* def = ItemDatabase::get(sel.itemID);
+                        ItemType type = def ? def->type : ItemType::Misc;
 
-                        float distance = std::sqrt(diff.x * diff.x + diff.y * diff.y);
-
-                        if (distance <= maxReach)
+                        if (type == ItemType::Food)
                         {
-                            myMap.destroyTile(worldPos.x, worldPos.y);
+                            // Jedzenie: leczy i znika z ekwipunku
+                            if (stats.health < stats.maxHealth)
+                            {
+                                stats.heal(def->power);
+                                inventory.useSelectedItem(1);
+                            }
+                        }
+                        else
+                        {
+                            float maxReach = 64.f;
+                            sf::Vector2f diff = worldPos - Player.getPosition();
+                            float distance = std::sqrt(diff.x * diff.x + diff.y * diff.y);
+
+                            if (distance <= maxReach)
+                            {
+                                if (type == ItemType::Block)
+                                {
+                                    // Stawianie bloku (nie na graczu)
+                                    float ts = 16.f;
+                                    sf::FloatRect tileRect(
+                                        {std::floor(worldPos.x / ts) * ts, std::floor(worldPos.y / ts) * ts},
+                                        {ts, ts});
+
+                                    bool overlapsPlayer = tileRect.findIntersection(Player.getBounds()).has_value();
+
+                                    if (!overlapsPlayer && myMap.placeTile(worldPos.x, worldPos.y, sel.itemID - 100))
+                                    {
+                                        inventory.useSelectedItem(1);
+                                    }
+                                }
+                                else
+                                {
+                                    // Kopanie: sila kilofa musi wystarczyc
+                                    int tile = myMap.getTile(worldPos.x, worldPos.y);
+                                    int power = (type == ItemType::Pickaxe && def) ? static_cast<int>(def->power) : 0;
+
+                                    if (tile != 0 && power >= requiredPower(tile))
+                                    {
+                                        myMap.destroyTile(worldPos.x, worldPos.y);
+                                    }
+                                }
+                            }
                         }
                     }
                 }

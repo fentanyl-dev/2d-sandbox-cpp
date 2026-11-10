@@ -35,6 +35,7 @@ void ItemDatabase::addTileItem(int id, const std::string& name, sf::IntRect rect
     def.isTile = true;
     def.tileRect = rect;
     items[id] = def;
+    def.type = ItemType::Block;
 }
 
 void ItemDatabase::innit()
@@ -81,6 +82,18 @@ void ItemDatabase::innit()
     addTileItem(tile_10, "Blok 10", sf::IntRect({0, 32},  {16, 16}));
     addTileItem(tile_11, "Blok 11", sf::IntRect({16, 32}, {16, 16}));
     addTileItem(tile_12, "Blok 12", sf::IntRect({32, 32}, {16, 16}));
+
+    //Staty
+    setStats(stoneSword, ItemType::Weapon, 2.f);
+    setStats(ironSword, ItemType::Weapon, 3.f);
+    setStats(ametystSword, ItemType::Weapon, 4.f);
+    setStats(diamondSword, ItemType::Weapon, 5.f);
+    setStats(obsidianSword, ItemType::Weapon, 6.f);
+
+    setStats(woodenPickaxe, ItemType::Pickaxe, 1.f);
+    setStats(stonePickaxe, ItemType::Pickaxe, 2.f);
+
+    setStats(cake, ItemType::Food, 20.f);
 }
 
 const ItemDef* ItemDatabase::get(int id)
@@ -99,4 +112,12 @@ void ItemDatabase::shutDown()
 
     delete terrain;
     terrain = nullptr;
+}
+
+void ItemDatabase::setStats(int id, ItemType type, float power)
+{
+    auto it = items.find(id);
+    if (it == items.end()) return;
+    it->second.type = type;
+    it->second.power = power;
 }
