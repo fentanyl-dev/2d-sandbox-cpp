@@ -27,7 +27,6 @@ void drawHUD(sf::RenderWindow& window, const stats& playerStats,
     float startY = 20.f;
     float iconSpacing = 25.f;
 
-    // ZYCIE
     int totalHearts = 10;
     float hpPerHeart = playerStats.maxHealth / totalHearts;
 
@@ -53,7 +52,6 @@ void drawHUD(sf::RenderWindow& window, const stats& playerStats,
         window.draw(icon);
     }
 
-    // MANA
     float energyStartY = startY + 30.f;
     int totalEnergies = 10;
     float energyPerIcon = playerStats.maxMana / totalEnergies;
@@ -81,17 +79,16 @@ void drawHUD(sf::RenderWindow& window, const stats& playerStats,
     }
 }
 
-// Jakiej sily kilofa wymaga dany kafel (0 = mozna golymi rekami)
 int requiredPower(int tile)
 {
     switch (tile)
     {
-        case 9:  return 1;   // kamien
+        case 9:  return 1;   
         case 8:
         case 10:
-        case 11: return 2;   // rudy
-        case 12: return 3;   // gleboka ruda
-        default: return 0;   // ziemia, trawa
+        case 11: return 2;   
+        case 12: return 3;   
+        default: return 0;   
     }
 }
 
@@ -185,7 +182,6 @@ int main()
         stats.update(dt);
         dayNight.update(dt);
 
-        // Spawn zalezny od pory dnia
         spawnInterval = dayNight.isNight() ? 2.0f : 8.0f;
         maxEnemies    = dayNight.isNight() ? 15   : 3;
 
@@ -229,7 +225,6 @@ int main()
                         sf::Vector2i mousePixelPos = sf::Mouse::getPosition(window);
                         sf::Vector2f guiMousePos = window.mapPixelToCoords(mousePixelPos, window.getDefaultView());
 
-                        // najpierw panel craftingu, potem ekwipunek
                         if (!crafting.handleClick(guiMousePos, window, inventory))
                         {
                             inventory.handleMouseClick(guiMousePos, window);
@@ -240,20 +235,25 @@ int main()
                         Player.attack();
                         sf::FloatRect attackArea = Player.getAttackBounds();
 
-                        // Obrazenia zaleza od trzymanego przedmiotu
                         const ItemDef* held = ItemDatabase::get(inventory.getSelectedItem().itemID);
                         float dmg = (held && held->type == ItemType::Weapon) ? held->power : 1.f;
 
+                        bool hitAny = false;
                         for (auto& enemy : enemies)
                         {
                             if (!enemy.isDead())
                             {
                                 if (attackArea.findIntersection(enemy.getBounds()).has_value())
                                 {
-                                    // Zadajemy obrazenia i przekazujemy pozycje gracza do odrzutu!
                                     enemy.takeDamage(dmg, Player.getPosition());
+                                    hitAny = true;
                                 }
                             }
+                        }
+
+                        if (held && held->type == ItemType::Weapon)
+                        {
+                            inventory.damageSelectedItem(1);
                         }
                     }
                 }
@@ -276,9 +276,12 @@ int main()
                         const ItemDef* def = ItemDatabase::get(sel.itemID);
                         ItemType type = def ? def->type : ItemType::Misc;
 
+                        cout << "item=" << sel.itemID << " def=" << (def != nullptr)
+                        << " type=" << (def ? static_cast<int>(def->type) : -1)
+                        << " tile=" << myMap.getTile(worldPos.x, worldPos.y) << endl;
+
                         if (type == ItemType::Food)
                         {
-                            // Jedzenie: leczy i znika z ekwipunku
                             if (stats.health < stats.maxHealth)
                             {
                                 stats.heal(def->power);
@@ -295,7 +298,6 @@ int main()
                             {
                                 if (type == ItemType::Block)
                                 {
-                                    // Stawianie bloku (nie na graczu)
                                     float ts = 16.f;
                                     sf::FloatRect tileRect(
                                         {std::floor(worldPos.x / ts) * ts, std::floor(worldPos.y / ts) * ts},
@@ -310,13 +312,13 @@ int main()
                                 }
                                 else
                                 {
-                                    // Kopanie: sila kilofa musi wystarczyc
                                     int tile = myMap.getTile(worldPos.x, worldPos.y);
                                     int power = (type == ItemType::Pickaxe && def) ? static_cast<int>(def->power) : 0;
 
                                     if (tile != 0 && power >= requiredPower(tile))
                                     {
                                         myMap.destroyTile(worldPos.x, worldPos.y);
+                                        inventory.damageSelectedItem(1);
                                     }
                                 }
                             }
@@ -335,7 +337,6 @@ int main()
                 if (keyPressed->code == sf::Keyboard::Key::H) stats.takeDamage(10.f);
                 if (keyPressed->code == sf::Keyboard::Key::M) stats.useMana(10.f);
 
-                // Test: przewijanie czasu o 0.1 doby
                 if (keyPressed->code == sf::Keyboard::Key::T)
                 {
                     dayNight.setTime(dayNight.getTime() + 0.1f);

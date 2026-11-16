@@ -64,6 +64,7 @@ struct ItemDef
 
     ItemType type = ItemType::Misc;
     float power = 0.f;
+    int maxDurability = 0;   
 };
 
 class ItemDatabase
@@ -72,7 +73,7 @@ class ItemDatabase
         static void innit();
         static const ItemDef* get(int id);
         static void shutDown();
-        static void setStats(int id, ItemType type, float power);
+        static void setStats(int id, ItemType type, float power, float durability = 0.f);
     private:
         static void addTextureItem(int id, const std::string& name, const std::string& path, int maxStack);
         static void addTileItem(int id, const std::string& name, sf::IntRect rect, int maxStack = 64);

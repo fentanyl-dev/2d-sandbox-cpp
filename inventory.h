@@ -9,6 +9,7 @@ struct inventorySlot
 {
     int itemID = 0;
     int amount = 0;
+    int durability = 0;
 };
 
 class Inventory
@@ -30,7 +31,7 @@ private:
 
     inventorySlot cursorItem;  
 
-    int fillRange(int itemID, int amount, int begin, int end);
+    int fillRange(int itemID, int amount, int begin, int end, int durability = 0);
     void quickMove(int index);
     void returnCursorItem();
     int slotIndexAt(sf::Vector2f mousePos, sf::Vector2f invPos) const;
@@ -55,4 +56,5 @@ public:
 
     int countItem(int itemID) const;
     void removeItem(int itemID, int amount);
+    void damageSelectedItem(int amount = 1);
 };

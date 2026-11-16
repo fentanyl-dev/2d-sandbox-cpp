@@ -34,8 +34,8 @@ void ItemDatabase::addTileItem(int id, const std::string& name, sf::IntRect rect
     def.texture = terrain;
     def.isTile = true;
     def.tileRect = rect;
-    items[id] = def;
     def.type = ItemType::Block;
+    items[id] = def;
 }
 
 void ItemDatabase::innit()
@@ -83,17 +83,17 @@ void ItemDatabase::innit()
     addTileItem(tile_11, "Blok 11", sf::IntRect({16, 32}, {16, 16}));
     addTileItem(tile_12, "Blok 12", sf::IntRect({32, 32}, {16, 16}));
 
-    //Staty
-    setStats(stoneSword, ItemType::Weapon, 2.f);
-    setStats(ironSword, ItemType::Weapon, 3.f);
-    setStats(ametystSword, ItemType::Weapon, 4.f);
-    setStats(diamondSword, ItemType::Weapon, 5.f);
-    setStats(obsidianSword, ItemType::Weapon, 6.f);
+    //Staty (ostatni argument = wytrzymalosc, czyli liczba uzyc)
+    setStats(stoneSword, ItemType::Weapon, 2.f, 10.f);
+    setStats(ironSword, ItemType::Weapon, 3.f, 15.f);
+    setStats(ametystSword, ItemType::Weapon, 4.f, 20.f);
+    setStats(diamondSword, ItemType::Weapon, 5.f, 30.f);
+    setStats(obsidianSword, ItemType::Weapon, 6.f, 40.f);
 
-    setStats(woodenPickaxe, ItemType::Pickaxe, 1.f);
-    setStats(stonePickaxe, ItemType::Pickaxe, 2.f);
+    setStats(woodenPickaxe, ItemType::Pickaxe, 1.f, 10.f);
+    setStats(stonePickaxe, ItemType::Pickaxe, 2.f, 20.f);
 
-    setStats(cake, ItemType::Food, 20.f);
+    setStats(cake, ItemType::Food, 20.f);   // jedzenie sie nie zuzywa
 }
 
 const ItemDef* ItemDatabase::get(int id)
@@ -114,10 +114,11 @@ void ItemDatabase::shutDown()
     terrain = nullptr;
 }
 
-void ItemDatabase::setStats(int id, ItemType type, float power)
+void ItemDatabase::setStats(int id, ItemType type, float power, float durability)
 {
     auto it = items.find(id);
     if (it == items.end()) return;
     it->second.type = type;
     it->second.power = power;
+    it->second.maxDurability = static_cast<int>(durability);
 }

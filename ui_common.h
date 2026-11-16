@@ -18,6 +18,9 @@ namespace ui
     void drawAmount(sf::RenderTarget& target, const sf::Font* font, int amount,
                     sf::Vector2f slotPos, float slotSize);
 
+    void drawDurability(sf::RenderTarget& target, int itemID, int durability,
+                        sf::Vector2f slotPos, float slotSize);
+
     void drawTooltip(sf::RenderTarget& target, const sf::Font* font, const std::string& text,
                      sf::Vector2f mousePos);
 }

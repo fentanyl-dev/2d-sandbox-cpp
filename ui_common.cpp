@@ -1,6 +1,7 @@
 #include "ui_common.h"
 #include "item.h"
 #include <string>
+#include <cstdint>
 
 namespace ui
 {
@@ -75,6 +76,30 @@ namespace ui
         text.setPosition({slotPos.x + slotSize - 3.f, slotPos.y + slotSize - 3.f});
 
         target.draw(text);
+    }
+
+    void drawDurability(sf::RenderTarget& target, int itemID, int durability,
+                        sf::Vector2f slotPos, float slotSize)
+    {
+        const ItemDef* def = ItemDatabase::get(itemID);
+        if (!def || def->maxDurability <= 0) return;
+
+        int currentDur = (durability <= 0) ? def->maxDurability : durability;
+
+        float frac = static_cast<float>(currentDur) / def->maxDurability;
+        float w = slotSize * 0.8f;
+        sf::Vector2f pos(slotPos.x + (slotSize - w) / 2.f, slotPos.y + slotSize - 7.f);
+
+        sf::RectangleShape bg({w, 3.f});
+        bg.setPosition(pos);
+        bg.setFillColor(sf::Color(20, 20, 20, 220));
+        target.draw(bg);
+
+        sf::RectangleShape fill({w * frac, 3.f});
+        fill.setPosition(pos);
+        fill.setFillColor(sf::Color(static_cast<std::uint8_t>(255 * (1.f - frac)),
+                                    static_cast<std::uint8_t>(255 * frac), 0));
+        target.draw(fill);
     }
 
     void drawTooltip(sf::RenderTarget& target, const sf::Font* font, const std::string& str,

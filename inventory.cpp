@@ -131,9 +131,16 @@ int Inventory::slotIndexAt(sf::Vector2f mousePos, sf::Vector2f invPos) const
     return -1;
 }
 
-int Inventory::fillRange(int itemID, int amount, int begin, int end)
+int Inventory::fillRange(int itemID, int amount, int begin, int end, int durability)
 {
     int maxStack = maxStackOf(itemID);
+    
+    const ItemDef* def = ItemDatabase::get(itemID);
+    int defaultDurability = durability;
+    if (defaultDurability <= 0 && def && def->maxDurability > 0)
+    {
+        defaultDurability = def->maxDurability; 
+    }
 
     for (int i = begin; i < end && amount > 0; i++)
     {
@@ -154,6 +161,7 @@ int Inventory::fillRange(int itemID, int amount, int begin, int end)
             int add = std::min(maxStack, amount);
             s.itemID = itemID;
             s.amount = add;
+            s.durability = defaultDurability; 
             amount -= add;
         }
     }
@@ -171,7 +179,7 @@ void Inventory::quickMove(int index)
     int begin = (index < HOTBAR_COUNT) ? HOTBAR_COUNT : 0;
     int end   = (index < HOTBAR_COUNT) ? total : HOTBAR_COUNT;
 
-    int left = fillRange(from.itemID, from.amount, begin, end);
+    int left = fillRange(from.itemID, from.amount, begin, end, from.durability);
     from.amount = left;
     if (left == 0) from = inventorySlot{};
 }
@@ -180,7 +188,8 @@ void Inventory::returnCursorItem()
 {
     if (cursorItem.itemID == 0) return;
 
-    cursorItem.amount = fillRange(cursorItem.itemID, cursorItem.amount, 0, static_cast<int>(slots.size()));
+    cursorItem.amount = fillRange(cursorItem.itemID, cursorItem.amount, 0,
+                                  static_cast<int>(slots.size()), cursorItem.durability);
     if (cursorItem.amount == 0) cursorItem = inventorySlot{};
 }
 
@@ -209,7 +218,7 @@ void Inventory::removeItem(int itemID, int amount)
         slot.amount -= take;
         amount -= take;
 
-        if (slot.amount == 0) slot.itemID = 0;
+        if (slot.amount == 0) slot = inventorySlot{};
         if (amount == 0) return;
     }
 }
@@ -226,12 +235,25 @@ bool Inventory::useSelectedItem(int amount)
         slots[selectedSlot].amount -= amount;
         if (slots[selectedSlot].amount <= 0)
         {
-            slots[selectedSlot].itemID = 0;
-            slots[selectedSlot].amount = 0;
+            slots[selectedSlot] = inventorySlot{};
         }
         return true;
     }
     return false;
+}
+
+void Inventory::damageSelectedItem(int amount)
+{
+    inventorySlot& s = slots[selectedSlot];
+    if (s.itemID == 0) return;
+
+    const ItemDef* def = ItemDatabase::get(s.itemID);
+    if (!def || def->maxDurability <= 0) return;
+
+    if (s.durability <= 0) s.durability = def->maxDurability;
+    s.durability -= amount;
+
+    if (s.durability <= 0) s = inventorySlot{};
 }
 
 void Inventory::toggle()
@@ -317,6 +339,7 @@ void Inventory::handleRightClick(sf::Vector2f mousePos, sf::RenderWindow& window
         int take = (slot.amount + 1) / 2;
         cursorItem.itemID = slot.itemID;
         cursorItem.amount = take;
+        cursorItem.durability = slot.durability;
 
         slot.amount -= take;
         if (slot.amount == 0) slot = inventorySlot{};
@@ -327,6 +350,7 @@ void Inventory::handleRightClick(sf::Vector2f mousePos, sf::RenderWindow& window
     {
         slot.itemID = cursorItem.itemID;
         slot.amount = 1;
+        slot.durability = cursorItem.durability;
     }
     else if (slot.itemID == cursorItem.itemID && slot.amount < maxStackOf(slot.itemID))
     {
@@ -369,6 +393,7 @@ void Inventory::draw(sf::RenderWindow& window)
             {
                 ui::drawItemIcon(window, slots[i].itemID, pos, slotSize);
                 ui::drawAmount(window, f, slots[i].amount, pos, slotSize);
+                ui::drawDurability(window, slots[i].itemID, slots[i].durability, pos, slotSize);
             }
 
             if (i == selectedSlot)
@@ -398,6 +423,7 @@ void Inventory::draw(sf::RenderWindow& window)
                 sf::Vector2f slotPos = getSlotPosition(static_cast<int>(i), invPos);
                 ui::drawItemIcon(window, slots[i].itemID, slotPos, slotWidth);
                 ui::drawAmount(window, f, slots[i].amount, slotPos, slotWidth);
+                ui::drawDurability(window, slots[i].itemID, slots[i].durability, slotPos, slotWidth);
             }
         }
 
@@ -424,7 +450,13 @@ void Inventory::draw(sf::RenderWindow& window)
             const ItemDef* def = ItemDatabase::get(slots[hovered].itemID);
             if (def)
             {
-                ui::drawTooltip(window, f, def->name, mousePos);
+                string tip = def->name;
+                if (def->maxDurability > 0)
+                {
+                    int d = slots[hovered].durability > 0 ? slots[hovered].durability : def->maxDurability;
+                    tip += "\nWytrzymalosc: " + to_string(d) + "/" + to_string(def->maxDurability);
+                }
+                ui::drawTooltip(window, f, tip, mousePos);
             }
         }
 
@@ -433,6 +465,7 @@ void Inventory::draw(sf::RenderWindow& window)
             sf::Vector2f topLeft = mousePos - sf::Vector2f(slotWidth / 2.f, slotWidth / 2.f);
             ui::drawItemIcon(window, cursorItem.itemID, topLeft, slotWidth);
             ui::drawAmount(window, f, cursorItem.amount, topLeft, slotWidth);
+            ui::drawDurability(window, cursorItem.itemID, cursorItem.durability, topLeft, slotWidth);
         }
     }
 }
