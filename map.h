@@ -61,4 +61,6 @@ public:
     bool placeTile(float worldX, float worldY, int tileType);
 
     int getTile(float worldX, float worldY);
+
+    sf::FloatRect getTileBounds(float worldX, float worldY);
 };

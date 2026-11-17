@@ -298,10 +298,7 @@ int main()
                             {
                                 if (type == ItemType::Block)
                                 {
-                                    float ts = 16.f;
-                                    sf::FloatRect tileRect(
-                                        {std::floor(worldPos.x / ts) * ts, std::floor(worldPos.y / ts) * ts},
-                                        {ts, ts});
+                                    sf::FloatRect tileRect = myMap.getTileBounds(worldPos.x, worldPos.y);
 
                                     bool overlapsPlayer = tileRect.findIntersection(Player.getBounds()).has_value();
 

@@ -317,3 +317,11 @@ bool map::placeTile(float worldX, float worldY, int tileType)
     mapData[tileY][tileX] = tileType;
     return true;
 }
+
+sf::FloatRect map::getTileBounds(float worldX, float worldY)
+{
+    int tileX = static_cast<int>(worldX / tileSize);
+    int tileY = static_cast<int>((worldY - mapOffsetY) / tileSize);
+
+    return {{tileX * tileSize, tileY * tileSize + mapOffsetY}, {tileSize, tileSize}};
+}
