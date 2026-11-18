@@ -2,6 +2,7 @@
 #include "inventory.h"
 #include "FastNoiseLite.h"
 
+#include <algorithm>
 #include <fstream>
 #include <iostream>
 #include <cmath>
@@ -21,7 +22,6 @@ void map::loadMap()
         cout << "Nie udalo sie wczytac pliku sky!" << endl;
     }
     sky.setSmooth(false);
-    sky.setRepeated(true); 
     skysprite.setTexture(sky);
     skysprite.setPosition({0.f, 0.f});
 
@@ -47,6 +47,8 @@ void map::loadMap()
             mapData.push_back(row);
         }
     }
+
+    version++;
 }
 
 sf::IntRect map::getTileRect(int tileType)
@@ -73,14 +75,58 @@ sf::IntRect map::getTileRect(int tileType)
     }
 }
 
+void map::drawTorch(sf::RenderWindow& window, sf::Vector2f pos)
+{
+    sf::RectangleShape stick({2.f, 9.f});
+    stick.setFillColor(sf::Color(120, 80, 40));
+    stick.setPosition({pos.x + 7.f, pos.y + 6.f});
+    window.draw(stick);
+
+    sf::RectangleShape flame({4.f, 4.f});
+    flame.setFillColor(sf::Color(255, 180, 50));
+    flame.setPosition({pos.x + 6.f, pos.y + 3.f});
+    window.draw(flame);
+}
+
 void map::draw(sf::RenderWindow& window)
 {
-    sf::Vector2f mapSize = getMapSize();
-    if (mapSize.x > 0 && mapSize.y > 0)
+    const sf::View worldView = window.getView();
+
+    window.setView(window.getDefaultView());
+
+    sf::Vector2u texSize = sky.getSize();
+    if (texSize.x > 0 && texSize.y > 0)
     {
-        skysprite.setTextureRect(sf::IntRect({0, 0}, {static_cast<int>(mapSize.x), static_cast<int>(mapSize.y)}));
+        sf::Vector2f viewSize = window.getDefaultView().getSize();
+        skysprite.setTextureRect(sf::IntRect({0, 0}, {static_cast<int>(texSize.x), static_cast<int>(texSize.y)}));
+        skysprite.setScale({viewSize.x / texSize.x, viewSize.y / texSize.y});
+        skysprite.setPosition({0.f, 0.f});
+        window.draw(skysprite);
     }
-    window.draw(skysprite);
+
+    window.setView(worldView);
+
+    if (!mapData.empty())
+    {
+        sf::Vector2f c = worldView.getCenter();
+        sf::Vector2f s = worldView.getSize();
+        int cols = static_cast<int>(mapData[0].size());
+
+        int x0 = std::max(0, static_cast<int>(std::floor((c.x - s.x / 2.f) / tileSize)));
+        int x1 = std::min(cols - 1, static_cast<int>(std::floor((c.x + s.x / 2.f) / tileSize)));
+        float bottom = getMapSize().y;
+
+        sf::RectangleShape back;
+        back.setFillColor(sf::Color(40, 32, 38));
+
+        for (int x = x0; x <= x1; x++)
+        {
+            float top = getSurfaceY(x * tileSize + 1.f);
+            back.setPosition({x * tileSize, top});
+            back.setSize({tileSize, bottom - top});
+            window.draw(back);
+        }
+    }
 
     for (size_t y = 0; y < mapData.size(); y++)
     {
@@ -89,6 +135,12 @@ void map::draw(sf::RenderWindow& window)
             int tileType = mapData[y][x];
 
             if (tileType == 0) continue;
+
+            if (tileType == TORCH_TILE)
+            {
+                drawTorch(window, {x * tileSize, y * tileSize + mapOffsetY});
+                continue;
+            }
 
             tileSprite.setPosition({x * tileSize, y * tileSize + mapOffsetY});
             tileSprite.setTextureRect(getTileRect(tileType));
@@ -118,7 +170,7 @@ bool map::isSolid(float x, float y)
         return false;
     }
     
-    return mapData[tileY][tileX] != 0;
+    return isSolidTile(mapData[tileY][tileX]);
 }
 
 float map::getGroundY(float x, float y)
@@ -135,7 +187,7 @@ float map::getSurfaceY(float worldX)
     {
         for (size_t y = 0; y < mapData.size(); y++)
         {
-            if (mapData[y][tileX] != 0) 
+            if (isSolidTile(mapData[y][tileX])) 
             {
                 return y * tileSize + mapOffsetY;
             }
@@ -183,13 +235,22 @@ bool map::destroyTile(float worldX, float worldY)
 
                 newItem.item.setPosition(newItem.position);
                 newItem.item.setSize({8.f, 8.f});
-                newItem.item.setFillColor(sf::Color::White);
-                newItem.item.setTexture(&tilesetTexture);
-                newItem.item.setTextureRect(getTileRect(tileType));
+
+                if (tileType == TORCH_TILE)
+                {
+                    newItem.item.setFillColor(sf::Color(255, 170, 60));
+                }
+                else
+                {
+                    newItem.item.setFillColor(sf::Color::White);
+                    newItem.item.setTexture(&tilesetTexture);
+                    newItem.item.setTextureRect(getTileRect(tileType));
+                }
 
                 droppedItems.push_back(newItem);
 
                 mapData[tileY][tileX] = 0;
+                version++;
                 return true;
             }
         }
@@ -293,6 +354,8 @@ void map::generateMap(int width, int height, int seed)
             }
         }
     }
+
+    version++;
 }
 
 int map::getTile(float worldX, float worldY)
@@ -305,6 +368,13 @@ int map::getTile(float worldX, float worldY)
     return mapData[tileY][tileX];
 }
 
+int map::tileAt(int tx, int ty) const
+{
+    if (ty < 0 || ty >= static_cast<int>(mapData.size())) return 0;
+    if (tx < 0 || tx >= static_cast<int>(mapData[ty].size())) return 0;
+    return mapData[ty][tx];
+}
+
 bool map::placeTile(float worldX, float worldY, int tileType)
 {
     int tileX = static_cast<int>(worldX / tileSize);
@@ -315,6 +385,7 @@ bool map::placeTile(float worldX, float worldY, int tileType)
     if (mapData[tileY][tileX] != 0) return false;
 
     mapData[tileY][tileX] = tileType;
+    version++;
     return true;
 }
 

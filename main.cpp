@@ -8,6 +8,7 @@
 #include "item.h"
 #include "crafting.h"
 #include "daynight.h"
+#include "lighting.h"
 
 #include <vector>
 #include <iostream>
@@ -128,10 +129,12 @@ int main()
     inventory.addItem(obsidianSword, 1);
     inventory.addItem(oak_plank, 6);
     inventory.addItem(stone, 7);
+    inventory.addItem(torch, 20);
 
     stats stats;
 
     DayNight dayNight;
+    Lighting lighting;
 
     sf::Texture heartFullTex, heartHalfTex, heartEmptyTex;
     sf::Texture energyFullTex, energyHalfTex, energyEmptyTex;
@@ -276,10 +279,6 @@ int main()
                         const ItemDef* def = ItemDatabase::get(sel.itemID);
                         ItemType type = def ? def->type : ItemType::Misc;
 
-                        cout << "item=" << sel.itemID << " def=" << (def != nullptr)
-                        << " type=" << (def ? static_cast<int>(def->type) : -1)
-                        << " tile=" << myMap.getTile(worldPos.x, worldPos.y) << endl;
-
                         if (type == ItemType::Food)
                         {
                             if (stats.health < stats.maxHealth)
@@ -300,7 +299,9 @@ int main()
                                 {
                                     sf::FloatRect tileRect = myMap.getTileBounds(worldPos.x, worldPos.y);
 
-                                    bool overlapsPlayer = tileRect.findIntersection(Player.getBounds()).has_value();
+                                    // pochodnia jest przezroczysta, wiec mozna ja postawic na graczu
+                                    bool overlapsPlayer = sel.itemID != torch &&
+                                        tileRect.findIntersection(Player.getBounds()).has_value();
 
                                     if (!overlapsPlayer && myMap.placeTile(worldPos.x, worldPos.y, sel.itemID - 100))
                                     {
@@ -367,6 +368,10 @@ int main()
         }
 
         myMap.checkItemPickup(Player.getPosition(), inventory);
+
+        // Oswietlenie: przelicza sie tylko gdy zmieni sie mapa, kafel gracza lub pochodnia w rece
+        bool holdingTorch = inventory.getSelectedItem().itemID == torch;
+        lighting.update(myMap, Player.getPosition(), holdingTorch);
         
         sf::Vector2f cameraPos = Player.getPosition();
         float halfWidth = gameView.getSize().x / 2.f;
@@ -397,9 +402,10 @@ int main()
 
         Player.draw(window);
 
-        window.setView(window.getDefaultView());
+        // Oswietlenie rysujemy w widoku gry (zastepuje dayNight.draw)
+        lighting.draw(window, gameView, dayNight.ambient());
 
-        dayNight.draw(window);
+        window.setView(window.getDefaultView());
 
         drawHUD(window, stats, heartFullTex, heartHalfTex, heartEmptyTex, 
                 energyFullTex, energyHalfTex, energyEmptyTex);

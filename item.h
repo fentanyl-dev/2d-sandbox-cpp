@@ -43,6 +43,7 @@ enum ItemID : int
     ametyst_ignot = 33,
     workbench = 34,
     oak_plank = 35,
+    torch = 36,
 
     //Bloki 
     dirt = 102,

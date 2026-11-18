@@ -73,6 +73,8 @@ void ItemDatabase::innit()
     addTextureItem(stick, "Patyk", "assets/items/stick.png", 64);
     addTextureItem(workbench, "Crafting", "assets/items/crafting_table.png", 64);
     addTextureItem(oak_plank, "Drewniana deska", "assets/items/oak_plank.png", 64);
+    addTextureItem(torch, "Pochodnia", "assets/items/torch.png", 64);
+
     //Bloki
 
     addTileItem(dirt,    "Ziemia",  sf::IntRect({16, 16}, {16, 16}));
@@ -94,6 +96,7 @@ void ItemDatabase::innit()
     setStats(stonePickaxe, ItemType::Pickaxe, 2.f, 20.f);
 
     setStats(cake, ItemType::Food, 20.f);   // jedzenie sie nie zuzywa
+    setStats(torch, ItemType::Block, 0.f);
 }
 
 const ItemDef* ItemDatabase::get(int id)
